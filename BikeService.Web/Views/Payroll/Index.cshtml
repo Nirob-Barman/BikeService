@@ -1,0 +1,101 @@
+@model List<BikeService.Application.DTOs.Payroll.PayrollRecordDto>
+@using BikeService.Domain.Enums
+@{
+    ViewData["Title"] = "Payroll Records";
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    int? year = ViewBag.Year;
+    int currentYear = ViewBag.CurrentYear;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Payroll Records</h4>
+        <small class="text-muted">Manage mechanic salary records</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> New Record
+    </a>
+</div>
+
+<!-- Year filter -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="mb-0 fw-semibold">Filter by Year:</label>
+            <select name="year" class="form-select form-select-sm" style="width:120px;" onchange="this.form.submit()">
+                <option value="">All Years</option>
+                @for (int y = currentYear; y >= currentYear - 5; y--)
+                {
+                    <option value="@y" selected="@(year == y)">@y</option>
+                }
+            </select>
+            @if (year.HasValue)
+            {
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">Clear</a>
+            }
+        </form>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-cash-stack text-muted" style="font-size:3rem;"></i>
+            <p class="mt-3 text-muted">No payroll records found@(year.HasValue ? $" for {year}" : "").</p>
+            <a asp-action="Create" class="btn btn-primary">Create First Record</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mechanic</th>
+                            <th>Period</th>
+                            <th class="text-end">Base Salary</th>
+                            <th class="text-end">Bonus</th>
+                            <th class="text-end">Deductions</th>
+                            <th class="text-end">Net Pay</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@r.MechanicName</td>
+                                <td>@r.PeriodLabel</td>
+                                <td class="text-end">৳@r.BaseSalary.ToString("N2")</td>
+                                <td class="text-end text-success">৳@r.Bonus.ToString("N2")</td>
+                                <td class="text-end text-danger">৳@r.Deductions.ToString("N2")</td>
+                                <td class="text-end fw-bold">৳@r.NetPay.ToString("N2")</td>
+                                <td>
+                                    @{
+                                        var (badgeClass, label) = r.Status switch
+                                        {
+                                            PayrollStatus.Draft     => ("bg-secondary", "Draft"),
+                                            PayrollStatus.Finalized => ("bg-primary",   "Finalized"),
+                                            PayrollStatus.Paid      => ("bg-success",   "Paid"),
+                                            _                       => ("bg-secondary", r.Status.ToString())
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@label</span>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Detail" asp-route-id="@r.Id"
+                                       class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

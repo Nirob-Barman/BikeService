@@ -1,0 +1,120 @@
+@model List<BikeService.Application.DTOs.Part.PartDto>
+@{
+    ViewData["Title"] = "Parts Inventory";
+    int unresolvedAlerts = ViewBag.UnresolvedAlertCount ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Parts Inventory</h4>
+    <div class="d-flex gap-2">
+        <a asp-controller="Inventory" asp-action="StockAlerts" class="btn btn-outline-warning position-relative">
+            Stock Alerts
+            @if (unresolvedAlerts > 0)
+            {
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                    @unresolvedAlerts
+                </span>
+            }
+        </a>
+        <a asp-controller="Inventory" asp-action="BulkImport" class="btn btn-outline-secondary">
+            Bulk Import
+        </a>
+        <a asp-controller="Inventory" asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Part
+        </a>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <p class="mb-0">No parts found. <a asp-controller="Inventory" asp-action="Create">Add one now.</a></p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>SKU</th>
+                            <th>Unit Price</th>
+                            <th>Stock</th>
+                            <th>Threshold</th>
+                            <th>Status</th>
+                            <th>Added</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td class="fw-medium">@item.Name</td>
+                                <td><span class="font-monospace text-muted small">@item.SKU</span></td>
+                                <td>$@item.UnitPrice.ToString("0.00")</td>
+                                <td>@item.StockQuantity</td>
+                                <td>@item.LowStockThreshold</td>
+                                <td>
+                                    @if (item.IsLowStock)
+                                    {
+                                        <span class="badge bg-danger">Low Stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">In Stock</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">
+                                    <a asp-controller="Inventory" asp-action="Edit" asp-route-id="@item.Id"
+                                       class="btn btn-sm btn-outline-primary me-1">Edit</a>
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete('@Url.Action("Delete", "Inventory", new { area = "Admin", id = item.Id })')">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function confirmDelete(url) {
+    Swal.fire({
+        title: 'Delete Part?',
+        text: 'This cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Delete'
+    }).then(r => {
+        if (r.isConfirmed) {
+            var f = document.createElement('form');
+            f.method = 'POST';
+            f.action = url;
+            var t = document.createElement('input');
+            t.type = 'hidden';
+            t.name = '__RequestVerificationToken';
+            t.value = document.querySelector('input[name=__RequestVerificationToken]')?.value || '';
+            f.appendChild(t);
+            document.body.appendChild(f);
+            f.submit();
+        }
+    });
+}
+</script>
+}

@@ -1,0 +1,95 @@
+@model List<BikeService.Application.DTOs.Payroll.PayrollRecordDto>
+@using BikeService.Domain.Enums
+@{
+    ViewData["Title"] = "My Payroll";
+    Layout = "~/Views/Shared/_MechanicLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-0">My Payroll</h5>
+        <small class="text-muted">Your salary records</small>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-cash-stack text-muted" style="font-size:3rem;"></i>
+            <p class="mt-3 text-muted mb-0">No payroll records yet.</p>
+        </div>
+    </div>
+}
+else
+{
+    var paid       = Model.Where(r => r.Status == PayrollStatus.Paid).Sum(r => r.NetPay);
+    var pending    = Model.Where(r => r.Status != PayrollStatus.Paid).Sum(r => r.NetPay);
+    var lastRecord = Model.FirstOrDefault();
+    <div class="row g-3 mb-4">
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total Paid</div>
+                    <div class="fs-5 fw-bold text-success">৳@paid.ToString("N2")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Pending / Draft</div>
+                    <div class="fs-5 fw-bold text-warning">৳@pending.ToString("N2")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Latest Period</div>
+                    <div class="fs-5 fw-bold">@(lastRecord?.PeriodLabel ?? "—")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Records table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Period</th>
+                            <th class="text-end">Base Salary</th>
+                            <th class="text-end">Bonus</th>
+                            <th class="text-end">Deductions</th>
+                            <th class="text-end">Net Pay</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            var (badgeClass, statusLabel) = r.Status switch
+                            {
+                                PayrollStatus.Draft     => ("bg-secondary", "Draft"),
+                                PayrollStatus.Finalized => ("bg-primary",   "Finalized"),
+                                PayrollStatus.Paid      => ("bg-success",   "Paid"),
+                                _                       => ("bg-secondary", r.Status.ToString())
+                            };
+                            <tr>
+                                <td class="fw-semibold">@r.PeriodLabel</td>
+                                <td class="text-end">৳@r.BaseSalary.ToString("N2")</td>
+                                <td class="text-end text-success">৳@r.Bonus.ToString("N2")</td>
+                                <td class="text-end text-danger">৳@r.Deductions.ToString("N2")</td>
+                                <td class="text-end fw-bold">৳@r.NetPay.ToString("N2")</td>
+                                <td><span class="badge @badgeClass">@statusLabel</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

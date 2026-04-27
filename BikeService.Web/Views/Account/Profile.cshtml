@@ -1,0 +1,397 @@
+@model BikeService.Web.ViewModels.Account.ProfileViewModel
+@{
+    ViewData["Title"] = "My Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var initials = ((Model.FirstName?.Length > 0 ? Model.FirstName[0].ToString() : "") +
+                    (Model.LastName?.Length  > 0 ? Model.LastName[0].ToString()  : "")).ToUpper();
+}
+
+@section Styles {
+<style>
+    :root {
+        --p:       #5B4FE9;
+        --p-dark:  #4338CA;
+        --p-light: #EEF2FF;
+        --p-ring:  rgba(91,79,233,.15);
+        --border:  #E2E8F0;
+        --muted:   #64748B;
+        --text:    #0F172A;
+        --err:     #EF4444;
+        --radius:  12px;
+        --radius-sm: 8px;
+        --font:    'Inter', system-ui, -apple-system, sans-serif;
+        --t:       180ms ease;
+    }
+    body { background: #F8FAFC; font-family: var(--font); }
+
+    .profile-wrap {
+        max-width: 820px;
+        margin: 2.5rem auto 3rem;
+        padding: 0 1rem;
+    }
+
+    /* ── Page header ── */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+    .profile-header h1 {
+        font-size: 1.375rem;
+        font-weight: 700;
+        letter-spacing: -.03em;
+        color: var(--text);
+        margin: 0;
+    }
+    .profile-header p {
+        font-size: .875rem;
+        color: var(--muted);
+        margin: .15rem 0 0;
+    }
+
+    /* ── Two-column grid ── */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+    @@media (min-width: 640px) {
+        .profile-grid { grid-template-columns: 220px 1fr; }
+    }
+
+    /* ── Card base ── */
+    .pcard {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+    .pcard-body { padding: 1.5rem; }
+    .pcard-section-title {
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1rem;
+    }
+
+    /* ── Avatar card (left) ── */
+    .avatar-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: .25rem;
+    }
+    .avatar-wrap {
+        position: relative;
+        width: 88px;
+        height: 88px;
+        margin-bottom: .75rem;
+        cursor: pointer;
+    }
+    .avatar-circle {
+        width: 88px; height: 88px;
+        border-radius: 50%;
+        background: var(--p-light);
+        color: var(--p);
+        font-size: 1.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px var(--border);
+        transition: box-shadow var(--t);
+    }
+    .avatar-circle img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+    }
+    .avatar-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: rgba(0,0,0,.38);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity var(--t);
+        cursor: pointer;
+    }
+    .avatar-wrap:hover .avatar-overlay { opacity: 1; }
+    .avatar-wrap:hover .avatar-circle  { box-shadow: 0 0 0 2px var(--p); }
+
+    .avatar-name {
+        font-size: .9375rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+    .avatar-email {
+        font-size: .8rem;
+        color: var(--muted);
+        word-break: break-all;
+    }
+
+    .divider-x {
+        height: 1px;
+        background: var(--border);
+        margin: 1.25rem 0;
+        width: 100%;
+    }
+
+    .side-action {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        width: 100%;
+        padding: .55rem .75rem;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        font-size: .8375rem;
+        font-weight: 500;
+        color: var(--muted);
+        transition: background var(--t), color var(--t);
+    }
+    .side-action:hover {
+        background: var(--p-light);
+        color: var(--p);
+    }
+    .side-action.danger:hover {
+        background: #FEF2F2;
+        color: var(--err);
+    }
+
+    /* ── Form card (right) ── */
+    .form-label {
+        font-size: .8125rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: .35rem;
+        display: block;
+    }
+    .form-hint {
+        font-size: .775rem;
+        color: var(--muted);
+        margin-top: .25rem;
+    }
+    .form-control {
+        height: 42px;
+        padding: 0 .875rem;
+        font-size: .9rem;
+        font-family: var(--font);
+        color: var(--text);
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        transition: border-color var(--t), box-shadow var(--t);
+    }
+    .form-control:focus {
+        border-color: var(--p);
+        box-shadow: 0 0 0 3px var(--p-ring);
+        outline: none;
+    }
+    .form-control.input-validation-error {
+        border-color: var(--err);
+    }
+    .form-control[readonly] {
+        background: #F8FAFC;
+        color: var(--muted);
+        cursor: default;
+    }
+    .field-validation-error,
+    .text-danger { color: var(--err) !important; font-size: .78rem; }
+
+    /* ── Email readonly row ── */
+    .email-row {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .75rem .875rem;
+        background: #F8FAFC;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+    }
+    .email-row svg { flex-shrink: 0; color: var(--muted); }
+    .email-row span { font-size: .9rem; color: var(--muted); }
+    .email-badge {
+        margin-left: auto;
+        font-size: .7rem;
+        font-weight: 600;
+        padding: .2rem .55rem;
+        border-radius: 20px;
+        background: #DCFCE7;
+        color: #16A34A;
+    }
+
+    /* ── Save button ── */
+    .btn-save {
+        height: 40px;
+        padding: 0 1.25rem;
+        background: var(--p);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font);
+        font-size: .875rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        transition: background var(--t), box-shadow var(--t), transform var(--t);
+        letter-spacing: -.01em;
+    }
+    .btn-save:hover {
+        background: var(--p-dark);
+        box-shadow: 0 4px 12px rgba(91,79,233,.3);
+        transform: translateY(-1px);
+    }
+    .btn-save:active { transform: translateY(0); }
+</style>
+}
+
+<div class="profile-wrap">
+
+    <div class="profile-header">
+        <div>
+            <h1>My Profile</h1>
+            <p>Manage your personal information and account settings</p>
+        </div>
+    </div>
+
+    <div class="profile-grid">
+
+        @* ── Left: Avatar & links ── *@
+        <div>
+            <div class="pcard">
+                <div class="pcard-body avatar-card">
+                    <form method="post" asp-action="Profile" enctype="multipart/form-data" id="photoForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="FirstName" />
+                        <input type="hidden" asp-for="LastName" />
+                        <input type="hidden" asp-for="Address" />
+                        <input type="file" id="photoInput" name="Photo" accept="image/*"
+                               class="d-none" onchange="previewAndSubmit(this)" />
+                    </form>
+
+                    <div class="avatar-wrap" onclick="document.getElementById('photoInput').click()" title="Change photo">
+                        <div class="avatar-circle" id="avatarCircle">
+                            @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                            {
+                                <img src="@Model.ProfileImageUrl" alt="Profile photo" />
+                            }
+                            else
+                            {
+                                @initials
+                            }
+                        </div>
+                        <div class="avatar-overlay">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                 stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <p class="avatar-name mb-0">@Model.FirstName @Model.LastName</p>
+                    <p class="avatar-email">@Model.Email</p>
+
+                    <div class="divider-x"></div>
+
+                    <a asp-action="ChangePassword" class="side-action">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        @* ── Right: Profile form ── *@
+        <div>
+            <div class="pcard">
+                <div class="pcard-body">
+                    <p class="pcard-section-title">Personal Information</p>
+
+                    <form method="post" asp-action="Profile" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email address</label>
+                            <div class="email-row">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                <span>@Model.Email</span>
+                                <span class="email-badge">Verified</span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Address" class="form-label">
+                                Address
+                                <span style="color:var(--muted);font-weight:400;font-size:.75rem;"> — optional</span>
+                            </label>
+                            <input asp-for="Address" class="form-control" placeholder="123 Main St, City" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="submit" class="btn-save">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function previewAndSubmit(input) {
+            if (!input.files || !input.files[0]) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var circle = document.getElementById('avatarCircle');
+                circle.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover;" />';
+                input.closest('form').submit();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    </script>
+}

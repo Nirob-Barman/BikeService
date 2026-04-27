@@ -1,0 +1,68 @@
+@model BikeService.Web.ViewModels.Mechanic.MechanicFormViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Mechanic";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Add Mechanic</h4>
+    <a asp-controller="AdminMechanic" asp-action="Index" class="btn btn-outline-secondary">&larr; Back to List</a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:580px;">
+    <div class="card-body p-4">
+        <form asp-controller="AdminMechanic" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label fw-medium"></label>
+                <input asp-for="FullName" class="form-control" placeholder="e.g. John Smith" />
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Specialty" class="form-label fw-medium"></label>
+                <input asp-for="Specialty" class="form-control" placeholder="e.g. Suspension &amp; Brakes" />
+                <span asp-validation-for="Specialty" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <div class="form-check">
+                    <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
+                    <label asp-for="IsAvailable" class="form-check-label">Currently available for assignments</label>
+                </div>
+            </div>
+
+            <hr class="my-3" />
+            <h6 class="fw-semibold mb-1">Login Account</h6>
+            <p class="text-muted small mb-3">Create portal access for this mechanic. Leave blank to add login later.</p>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label fw-medium"></label>
+                <input asp-for="Email" class="form-control" placeholder="e.g. john.smith@bikeservice.com" autocomplete="off" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label fw-medium"></label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Min. 6 characters" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="ConfirmPassword" class="form-label fw-medium"></label>
+                <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="Repeat password" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4">Add Mechanic</button>
+                <a asp-controller="AdminMechanic" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

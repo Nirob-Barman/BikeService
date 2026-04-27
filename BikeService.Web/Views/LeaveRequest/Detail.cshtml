@@ -1,0 +1,92 @@
+@model BikeService.Application.DTOs.LeaveRequest.LeaveRequestDto
+@using BikeService.Domain.Enums
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Leave Request Detail";
+
+    var badgeClass = Model.Status switch
+    {
+        LeaveRequestStatus.Pending  => "bg-warning text-dark",
+        LeaveRequestStatus.Approved => "bg-success",
+        LeaveRequestStatus.Rejected => "bg-danger",
+        _                           => "bg-secondary",
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Leave Request #@Model.Id</h4>
+    <a asp-action="Index" class="btn btn-outline-secondary">&larr; Back to List</a>
+</div>
+
+<div style="max-width:620px;">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+            <span>Request Details</span>
+            <span class="badge @badgeClass">@Model.Status</span>
+        </div>
+        <div class="card-body p-4">
+            <dl class="row mb-0">
+                <dt class="col-sm-4 text-muted">Mechanic</dt>
+                <dd class="col-sm-8 fw-medium">@Model.MechanicName</dd>
+
+                <dt class="col-sm-4 text-muted">Leave Type</dt>
+                <dd class="col-sm-8">@Model.Type</dd>
+
+                <dt class="col-sm-4 text-muted">Period</dt>
+                <dd class="col-sm-8">
+                    @Model.FromDate.ToString("MMM d, yyyy") &ndash; @Model.ToDate.ToString("MMM d, yyyy")
+                    <span class="text-muted small ms-1">(@Model.TotalDays day@(Model.TotalDays != 1 ? "s" : ""))</span>
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Reason</dt>
+                <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Reason) ? "—" : Model.Reason)</dd>
+
+                <dt class="col-sm-4 text-muted">Submitted</dt>
+                <dd class="col-sm-8 text-muted small">@Model.CreatedAt.ToString("MMM d, yyyy h:mm tt")</dd>
+
+                @if (!string.IsNullOrWhiteSpace(Model.AdminNotes))
+                {
+                    <dt class="col-sm-4 text-muted">Admin Notes</dt>
+                    <dd class="col-sm-8">@Model.AdminNotes</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    @if (Model.Status == LeaveRequestStatus.Pending)
+    {
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Decision</div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-medium small">Admin Notes <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea id="adminNotesInput" class="form-control" rows="3"
+                              placeholder="Reason for decision, instructions, etc."></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <form asp-action="Approve" asp-route-id="@Model.Id" method="post" id="approveForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="adminNotes" id="approveNotes" />
+                        <button type="submit" class="btn btn-success px-4">Approve</button>
+                    </form>
+                    <form asp-action="Reject" asp-route-id="@Model.Id" method="post" id="rejectForm">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="adminNotes" id="rejectNotes" />
+                        <button type="submit" class="btn btn-danger px-4">Reject</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('approveForm')?.addEventListener('submit', function () {
+            document.getElementById('approveNotes').value = document.getElementById('adminNotesInput').value;
+        });
+        document.getElementById('rejectForm')?.addEventListener('submit', function () {
+            document.getElementById('rejectNotes').value = document.getElementById('adminNotesInput').value;
+        });
+    </script>
+}

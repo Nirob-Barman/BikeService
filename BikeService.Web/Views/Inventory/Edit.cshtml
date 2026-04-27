@@ -1,0 +1,65 @@
+@model BikeService.Web.ViewModels.Inventory.PartFormViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Edit Part";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Edit Part</h4>
+    <a asp-controller="Inventory" asp-action="Index" class="btn btn-outline-secondary">
+        &larr; Back to Inventory
+    </a>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width: 620px;">
+    <div class="card-body p-4">
+        <form asp-controller="Inventory" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-medium"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SKU" class="form-label fw-medium"></label>
+                <input asp-for="SKU" class="form-control font-monospace text-uppercase" />
+                <span asp-validation-for="SKU" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="UnitPrice" class="form-label fw-medium"></label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input asp-for="UnitPrice" class="form-control" type="number" step="0.01" min="0.01" />
+                </div>
+                <span asp-validation-for="UnitPrice" class="text-danger small"></span>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6">
+                    <label asp-for="StockQuantity" class="form-label fw-medium"></label>
+                    <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
+                    <span asp-validation-for="StockQuantity" class="text-danger small"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="LowStockThreshold" class="form-label fw-medium"></label>
+                    <input asp-for="LowStockThreshold" class="form-control" type="number" min="0" />
+                    <div class="form-text">Alert fires when stock drops to or below this value.</div>
+                    <span asp-validation-for="LowStockThreshold" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                <a asp-controller="Inventory" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

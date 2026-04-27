@@ -1,0 +1,183 @@
+@using BikeService.Application.DTOs.AuditLog
+@model (List<AuditLogDto> Items, int TotalCount, AuditLogFilterDto Filter)
+@{
+    ViewData["Title"] = "Audit Logs";
+
+    int pageSize = Model.Filter.PageSize;
+    int pageNumber = Model.Filter.PageNumber;
+    int totalPages = (int)Math.Ceiling((double)Model.TotalCount / pageSize);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Audit Logs</h4>
+    <span class="text-muted small">@Model.TotalCount total record(s)</span>
+</div>
+
+<!-- Filter -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small fw-medium">Entity</label>
+                <input type="text" name="entityName" class="form-control form-control-sm"
+                       value="@Model.Filter.EntityName" placeholder="e.g. ServiceTicket" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-medium">Action</label>
+                <input type="text" name="action" class="form-control form-control-sm"
+                       value="@Model.Filter.Action" placeholder="e.g. Create, Update" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-medium">User Email</label>
+                <input type="text" name="userEmail" class="form-control form-control-sm"
+                       value="@Model.Filter.UserEmail" placeholder="user@example.com" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-medium">From</label>
+                <input type="date" name="dateFrom" class="form-control form-control-sm"
+                       value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-medium">To</label>
+                <input type="date" name="dateTo" class="form-control form-control-sm"
+                       value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm">Go</button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">X</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Entity</th>
+                        <th>Action</th>
+                        <th>User</th>
+                        <th>Details</th>
+                        <th>Date</th>
+                        <th class="text-center">Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No audit logs found.</td>
+                        </tr>
+                    }
+                    @foreach (var log in Model.Items)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fw-medium">@log.EntityName</span>
+                                @if (!string.IsNullOrEmpty(log.EntityId))
+                                {
+                                    <small class="text-muted d-block">#@log.EntityId</small>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    string actionColor = log.Action?.ToLower() switch
+                                    {
+                                        "create" => "success",
+                                        "update" => "primary",
+                                        "delete" => "danger",
+                                        _ => "secondary"
+                                    };
+                                }
+                                <span class="badge bg-@actionColor">@log.Action</span>
+                            </td>
+                            <td>
+                                <span class="small">@(log.UserEmail ?? "—")</span>
+                            </td>
+                            <td class="text-muted small" style="max-width:200px;white-space:normal;">
+                                @log.Details
+                            </td>
+                            <td class="text-muted small text-nowrap">
+                                @log.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                            </td>
+                            <td class="text-center">
+                                @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#valuesModal-@log.Id">
+                                        View
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+@if (totalPages > 1)
+{
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(pageNumber <= 1 ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { entityName = Model.Filter.EntityName, action = Model.Filter.Action, userEmail = Model.Filter.UserEmail, dateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), dateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), page = pageNumber - 1 })">
+                    &laquo; Prev
+                </a>
+            </li>
+            @for (int p = Math.Max(1, pageNumber - 2); p <= Math.Min(totalPages, pageNumber + 2); p++)
+            {
+                <li class="page-item @(p == pageNumber ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("Index", new { entityName = Model.Filter.EntityName, action = Model.Filter.Action, userEmail = Model.Filter.UserEmail, dateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), dateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), page = p })">@p</a>
+                </li>
+            }
+            <li class="page-item @(pageNumber >= totalPages ? "disabled" : "")">
+                <a class="page-link" href="@Url.Action("Index", new { entityName = Model.Filter.EntityName, action = Model.Filter.Action, userEmail = Model.Filter.UserEmail, dateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), dateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), page = pageNumber + 1 })">
+                    Next &raquo;
+                </a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<!-- Modals for OldValues/NewValues -->
+@foreach (var log in Model.Items)
+{
+    if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+    {
+        <div class="modal fade" id="valuesModal-@log.Id" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@log.EntityName — @log.Action #@log.EntityId</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(log.OldValues))
+                        {
+                            <h6 class="text-muted fw-semibold">Old Values</h6>
+                            <pre class="bg-light rounded p-3 small overflow-auto" style="max-height:250px;">@log.OldValues</pre>
+                        }
+                        @if (!string.IsNullOrEmpty(log.NewValues))
+                        {
+                            <h6 class="text-muted fw-semibold mt-3">New Values</h6>
+                            <pre class="bg-light rounded p-3 small overflow-auto" style="max-height:250px;">@log.NewValues</pre>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

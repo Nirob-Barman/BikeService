@@ -1,0 +1,96 @@
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Bulk Import Parts";
+    var importResult = ViewBag.ImportResult as BikeService.Application.DTOs.BulkImport.BulkImportResultDto;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Bulk Import Parts</h4>
+    <a asp-controller="Inventory" asp-action="Index" class="btn btn-outline-secondary">
+        &larr; Back to Inventory
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom fw-semibold">Upload CSV File</div>
+            <div class="card-body p-4">
+                <form asp-controller="Inventory" asp-action="BulkImport" method="post"
+                      enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label for="file" class="form-label fw-medium">Select CSV File</label>
+                        <input type="file" id="file" name="file" class="form-control" accept=".csv" required />
+                        <div class="form-text">Only .csv files are accepted. Max recommended: 5 MB.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                        Import Parts
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-header bg-white border-bottom fw-semibold">CSV Format</div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">The CSV must include these columns in the first row (header):</p>
+                <pre class="bg-light rounded p-3 small mb-2">Name,SKU,UnitPrice,StockQuantity,LowStockThreshold</pre>
+                <p class="text-muted small mb-2">Example rows:</p>
+                <pre class="bg-light rounded p-3 small mb-0">Chain Lube,LUB-001,12.99,50,10
+Brake Pad Set,BRK-001,24.50,30,5
+Inner Tube 26",TUB-026,8.00,100,20</pre>
+            </div>
+        </div>
+    </div>
+
+    @if (importResult != null)
+    {
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom fw-semibold">Import Result</div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-4">
+                            <div class="text-center p-3 rounded bg-light">
+                                <div class="fs-3 fw-bold text-primary">@importResult.TotalRows</div>
+                                <div class="small text-muted">Total Rows</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-3 rounded bg-success bg-opacity-10">
+                                <div class="fs-3 fw-bold text-success">@importResult.SuccessCount</div>
+                                <div class="small text-muted">Imported</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-3 rounded @(importResult.FailedCount > 0 ? "bg-danger bg-opacity-10" : "bg-light")">
+                                <div class="fs-3 fw-bold @(importResult.FailedCount > 0 ? "text-danger" : "text-muted")">@importResult.FailedCount</div>
+                                <div class="small text-muted">Failed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (importResult.Errors != null && importResult.Errors.Any())
+                    {
+                        <h6 class="fw-semibold mb-2 text-danger">Errors (@importResult.Errors.Count)</h6>
+                        <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                            @foreach (var error in importResult.Errors)
+                            {
+                                <li class="list-group-item list-group-item-danger small py-1 px-2">@error</li>
+                            }
+                        </ul>
+                    }
+                    else if (importResult.SuccessCount > 0)
+                    {
+                        <div class="alert alert-success mb-0 small">
+                            All rows imported successfully.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

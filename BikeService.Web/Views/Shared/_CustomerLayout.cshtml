@@ -1,0 +1,1024 @@
+@using System.Security.Claims
+@using BikeService.Application.Interfaces
+@inject INotificationService NotificationService
+@{
+    var fullName  = User.Identity?.IsAuthenticated == true
+                        ? (User.FindFirstValue(ClaimTypes.Name) ?? "Customer")
+                        : "Customer";
+    var initial   = fullName.Length > 0 ? fullName[0].ToString().ToUpper() : "C";
+    var userId    = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var unread    = userId != null ? await NotificationService.GetUnreadCountAsync(userId) : 0;
+    var ctrl      = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action    = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var pageTitle = ViewData["Title"]?.ToString() ?? "My Account";
+
+    bool IsActive(string c, string a = "") =>
+        ctrl == c && (string.IsNullOrEmpty(a) || action == a);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@pageTitle — BikeService</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        /* ── Design Tokens ── */
+        :root {
+            --sb-w:       200px;
+            --sb-mini:    58px;
+            --tb-h:       56px;
+            --bg:         #F8FAFC;
+            --surface:    #FFFFFF;
+            --border:     #E2E8F0;
+            /* Indigo accent */
+            --cp:         #5B4FE9;
+            --cp-dark:    #4338CA;
+            --cp-light:   #EEF2FF;
+            --cp-ring:    rgba(91,79,233,.12);
+            /* Text */
+            --text:       #0F172A;
+            --text-2:     #334155;
+            --muted:      #64748B;
+            --label:      #94A3B8;
+            --hover:      #F1F5F9;
+            /* Radii & shadows */
+            --radius:     8px;
+            --radius-lg:  12px;
+            --shadow-sm:  0 1px 2px rgba(0,0,0,.05);
+            --shadow:     0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+            --shadow-md:  0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -1px rgba(0,0,0,.04);
+            --t:          200ms ease;
+            --font:       'Inter', system-ui, -apple-system, sans-serif;
+            /* Status */
+            --success:    #16A34A; --success-bg: #DCFCE7;
+            --warning:    #D97706; --warning-bg: #FEF3C7;
+            --danger:     #DC2626; --danger-bg:  #FEE2E2;
+            --info:       #2563EB; --info-bg:    #DBEAFE;
+        }
+
+        /* ── Reset ── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ════════════════════════════════
+           SIDEBAR — white, indigo accents
+        ════════════════════════════════ */
+        .cst-sidebar {
+            position: fixed;
+            left: 0; top: 0;
+            width: var(--sb-w);
+            height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            transition: width var(--t), transform var(--t);
+            overflow: hidden;
+        }
+
+        /* Logo */
+        .cst-logo {
+            height: var(--tb-h);
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            border-bottom: 1px solid var(--border);
+            gap: .6rem;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+        .cst-logo-icon {
+            width: 28px; height: 28px;
+            background: var(--cp);
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            flex-shrink: 0;
+        }
+        .cst-logo-text {
+            font-size: .9375rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -.025em;
+            white-space: nowrap;
+            transition: opacity var(--t), width var(--t);
+        }
+
+        /* Greeting strip */
+        .cst-user-strip {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            padding: .875rem 1rem;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: opacity var(--t);
+        }
+        .cst-strip-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--cp-light);
+            color: var(--cp);
+            font-size: .8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cst-strip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .cst-strip-info { min-width: 0; }
+        .cst-strip-name {
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .cst-strip-role {
+            font-size: .7rem;
+            color: var(--muted);
+        }
+
+        /* Nav scroll area */
+        .cst-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: .625rem 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+        .cst-nav::-webkit-scrollbar { width: 3px; }
+        .cst-nav::-webkit-scrollbar-track { background: transparent; }
+        .cst-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        /* Sections */
+        .cst-nav-section { padding: 0 .5rem; }
+        .cst-nav-section + .cst-nav-section { margin-top: .125rem; }
+        .cst-nav-label {
+            display: block;
+            font-size: .6875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--label);
+            padding: .625rem .5rem .25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: opacity var(--t), height var(--t);
+        }
+
+        /* Nav item */
+        .cst-nav-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .45rem .625rem;
+            margin: 1px 0;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-size: .8125rem;
+            font-weight: 500;
+            color: var(--muted);
+            transition: background var(--t), color var(--t);
+            white-space: nowrap;
+            position: relative;
+        }
+        .cst-nav-item:hover {
+            background: var(--hover);
+            color: var(--text-2);
+            text-decoration: none;
+        }
+        .cst-nav-item.active {
+            background: var(--cp-light);
+            color: var(--cp);
+            font-weight: 600;
+        }
+        .cst-nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 16px; height: 16px;
+        }
+        .cst-nav-text { flex: 1; transition: opacity var(--t); }
+
+        /* Notification badge in sidebar */
+        .cst-nav-count {
+            font-size: .65rem;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            background: #EF4444;
+            color: #fff;
+            border-radius: 9px;
+            padding: 0 .3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: opacity var(--t);
+        }
+
+        /* Book Appointment CTA in sidebar */
+        .cst-nav-cta {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .5rem .625rem;
+            margin: .25rem .5rem;
+            border-radius: var(--radius);
+            text-decoration: none;
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--cp);
+            background: var(--cp-light);
+            border: 1.5px solid rgba(91,79,233,.15);
+            transition: background var(--t), box-shadow var(--t);
+            white-space: nowrap;
+        }
+        .cst-nav-cta:hover {
+            background: #E5EDFF;
+            box-shadow: 0 2px 8px rgba(91,79,233,.15);
+            text-decoration: none;
+            color: var(--cp);
+        }
+
+        /* Sidebar footer */
+        .cst-sidebar-foot {
+            border-top: 1px solid var(--border);
+            padding: .625rem .5rem;
+            flex-shrink: 0;
+        }
+        .cst-collapse-btn {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            width: 100%;
+            padding: .45rem .625rem;
+            border-radius: var(--radius);
+            background: none;
+            border: none;
+            font-family: var(--font);
+            font-size: .8125rem;
+            font-weight: 500;
+            color: var(--muted);
+            cursor: pointer;
+            transition: background var(--t), color var(--t);
+            white-space: nowrap;
+        }
+        .cst-collapse-btn:hover { background: var(--hover); color: var(--text); }
+        .cst-collapse-icon { display: flex; align-items: center; flex-shrink: 0; transition: transform var(--t); }
+        .cst-collapse-text { transition: opacity var(--t); }
+
+        /* ── Mini (collapsed) state ── */
+        .cst-sidebar.mini { width: var(--sb-mini); }
+
+        .cst-sidebar.mini .cst-logo-text { opacity: 0; width: 0; overflow: hidden; }
+        .cst-sidebar.mini .cst-logo      { justify-content: center; padding: 0; }
+        .cst-sidebar.mini .cst-user-strip { opacity: 0; height: 0; padding: 0; overflow: hidden; border: none; }
+        .cst-sidebar.mini .cst-nav-label  { opacity: 0; height: 0; padding-top: 0; padding-bottom: 0; }
+        .cst-sidebar.mini .cst-nav-section { padding: 0 .375rem; }
+        .cst-sidebar.mini .cst-nav-item   { justify-content: center; padding: .5rem; gap: 0; }
+        .cst-sidebar.mini .cst-nav-text,
+        .cst-sidebar.mini .cst-nav-count  { opacity: 0; width: 0; overflow: hidden; }
+        .cst-sidebar.mini .cst-nav-cta    { justify-content: center; padding: .5rem; margin: .25rem .375rem; }
+        .cst-sidebar.mini .cst-nav-cta .cst-nav-text { opacity: 0; width: 0; }
+        .cst-sidebar.mini .cst-collapse-btn   { justify-content: center; padding: .5rem; }
+        .cst-sidebar.mini .cst-collapse-text  { opacity: 0; width: 0; overflow: hidden; }
+        .cst-sidebar.mini .cst-collapse-icon  { transform: rotate(180deg); }
+
+        /* Mini tooltips */
+        .cst-sidebar.mini .cst-nav-item[data-label]:hover::after,
+        .cst-sidebar.mini .cst-nav-cta[data-label]:hover::after {
+            content: attr(data-label);
+            position: absolute;
+            left: calc(100% + .625rem);
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1E293B;
+            color: #fff;
+            font-size: .75rem;
+            font-weight: 500;
+            padding: .3rem .625rem;
+            border-radius: 6px;
+            white-space: nowrap;
+            z-index: 400;
+            box-shadow: var(--shadow-md);
+            pointer-events: none;
+        }
+
+        /* ════════════════════════════════
+           MAIN WRAPPER
+        ════════════════════════════════ */
+        .cst-wrap {
+            margin-left: var(--sb-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: margin-left var(--t);
+        }
+        .cst-wrap.mini { margin-left: var(--sb-mini); }
+
+        /* ════════════════════════════════
+           TOPBAR
+        ════════════════════════════════ */
+        .cst-topbar {
+            position: sticky;
+            top: 0;
+            height: var(--tb-h);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            gap: .75rem;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .cst-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: .625rem;
+            flex: 1;
+            min-width: 0;
+        }
+        .cst-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: var(--radius);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted);
+            transition: background var(--t), color var(--t);
+            flex-shrink: 0;
+        }
+        .cst-toggle-btn:hover { background: var(--hover); color: var(--text); }
+        .cst-page-title {
+            font-size: .9375rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -.015em;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Book Appointment CTA in topbar */
+        .cst-book-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .375rem;
+            height: 30px;
+            padding: 0 .75rem;
+            border-radius: var(--radius);
+            font-family: var(--font);
+            font-size: .775rem;
+            font-weight: 600;
+            background: var(--cp);
+            color: #fff;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background var(--t), box-shadow var(--t);
+            letter-spacing: -.01em;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .cst-book-btn:hover {
+            background: var(--cp-dark);
+            box-shadow: 0 2px 8px rgba(91,79,233,.28);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* Topbar right */
+        .cst-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: .25rem;
+            flex-shrink: 0;
+        }
+        .cst-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: var(--radius);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted);
+            transition: background var(--t), color var(--t);
+            position: relative;
+            text-decoration: none;
+        }
+        .cst-icon-btn:hover { background: var(--hover); color: var(--text); }
+        .cst-topbar-divider { width: 1px; height: 18px; background: var(--border); margin: 0 .125rem; }
+
+        /* Notification badge */
+        .cst-bell-count {
+            position: absolute;
+            top: 3px; right: 2px;
+            min-width: 16px; height: 16px;
+            background: #EF4444;
+            color: #fff;
+            font-size: .6rem;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 0 .2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--surface);
+            line-height: 1;
+        }
+
+        /* User dropdown */
+        .cst-user-drop { position: relative; }
+        .cst-user-btn {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            height: 32px;
+            padding: 0 .375rem;
+            border-radius: var(--radius);
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: background var(--t);
+        }
+        .cst-user-btn:hover { background: var(--hover); }
+        .cst-avatar {
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            background: var(--cp-light);
+            color: var(--cp);
+            font-size: .725rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cst-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .cst-user-name {
+            font-size: .8125rem;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .cst-user-caret { color: var(--label); display: flex; transition: transform var(--t); }
+        .cst-user-drop.open .cst-user-caret { transform: rotate(180deg); }
+
+        .cst-drop-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + .375rem);
+            width: 200px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md), 0 8px 24px rgba(0,0,0,.06);
+            z-index: 500;
+            padding: .375rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-6px);
+            transition: opacity var(--t), visibility var(--t), transform var(--t);
+        }
+        .cst-user-drop.open .cst-drop-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+        .cst-drop-head {
+            padding: .625rem .75rem .5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: .25rem;
+        }
+        .cst-drop-head-name  { font-size: .8125rem; font-weight: 600; color: var(--text); }
+        .cst-drop-head-email { font-size: .7rem; color: var(--muted); margin-top: .1rem; word-break: break-all; }
+        .cst-drop-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .45rem .75rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: .8125rem;
+            font-weight: 500;
+            color: var(--text-2);
+            transition: background var(--t), color var(--t);
+            width: 100%;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font);
+            text-align: left;
+        }
+        .cst-drop-item:hover { background: var(--hover); color: var(--text); }
+        .cst-drop-item.danger { color: #DC2626; }
+        .cst-drop-item.danger:hover { background: #FEE2E2; }
+        .cst-drop-divider { height: 1px; background: var(--border); margin: .25rem 0; }
+
+        /* ════════════════════════════════
+           CONTENT + FOOTER
+        ════════════════════════════════ */
+        .cst-content { flex: 1; padding: 1.75rem; }
+        .cst-footer {
+            padding: .875rem 1.75rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: .75rem;
+            color: var(--label);
+            background: var(--surface);
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+        .cst-footer a { color: var(--muted); text-decoration: none; }
+        .cst-footer a:hover { color: var(--cp); }
+
+        /* ════════════════════════════════
+           MOBILE OVERLAY
+        ════════════════════════════════ */
+        .cst-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.4);
+            z-index: 150;
+            backdrop-filter: blur(2px);
+        }
+        .cst-overlay.show { display: block; }
+
+        /* ════════════════════════════════
+           RESPONSIVE
+        ════════════════════════════════ */
+        @@media (max-width: 767px) {
+            .cst-sidebar {
+                transform: translateX(-100%);
+                z-index: 300;
+                width: var(--sb-w) !important;
+            }
+            .cst-sidebar.open { transform: translateX(0); }
+            .cst-wrap { margin-left: 0 !important; }
+            .cst-content { padding: 1rem; }
+            .cst-book-btn { display: none; }
+        }
+        @@media (min-width: 768px) {
+            .cst-user-name { display: inline !important; }
+        }
+
+        /* ════════════════════════════════
+           VALIDATION HELPERS
+        ════════════════════════════════ */
+        .validation-summary-valid { display: none !important; }
+        .field-validation-error, .text-danger { color: #DC2626 !important; font-size: .75rem; }
+        .input-validation-error { border-color: #DC2626 !important; }
+
+        /* ════════════════════════════════
+           COMPONENT LIBRARY
+        ════════════════════════════════ */
+
+        /* Page heading */
+        .cst-page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+        .cst-page-head-left { display: flex; align-items: center; gap: .625rem; flex-wrap: wrap; }
+        .cst-page-head h2 { font-size: 1.0625rem; font-weight: 700; color: var(--text); letter-spacing: -.025em; margin: 0; }
+
+        /* Back link */
+        .cst-back { display: inline-flex; align-items: center; gap: .3rem; font-size: .8125rem; font-weight: 500; color: var(--muted); text-decoration: none; transition: color var(--t); flex-shrink: 0; }
+        .cst-back:hover { color: var(--text); text-decoration: none; }
+
+        /* Cards */
+        .cst-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+        .cst-card-head { padding: .875rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+        .cst-card-title { font-size: .875rem; font-weight: 600; color: var(--text); letter-spacing: -.01em; margin: 0; }
+        .cst-card-body { padding: 1.25rem; }
+
+        /* Table */
+        .cst-table-wrap { overflow-x: auto; }
+        .cst-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
+        .cst-table th { font-size: .6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--label); padding: .625rem 1.25rem; background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; text-align: left; }
+        .cst-table th.r, .cst-table td.r { text-align: right; }
+        .cst-table td { padding: .75rem 1.25rem; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: middle; }
+        .cst-table tbody tr:last-child td { border-bottom: none; }
+        .cst-table tbody tr:hover td { background: var(--hover); }
+        .cst-table td.muted { color: var(--muted); font-size: .7875rem; }
+        .cst-table td.bold { font-weight: 600; color: var(--text); }
+        .cst-table tfoot td { padding: .625rem 1.25rem; background: var(--bg); font-weight: 600; color: var(--text); border-top: 1px solid var(--border); border-bottom: none; }
+
+        /* Badges */
+        .cst-badge { display: inline-flex; align-items: center; font-size: .6875rem; font-weight: 600; letter-spacing: .025em; padding: .2rem .55rem; border-radius: 6px; white-space: nowrap; }
+        .cst-badge-pending  { background: #F1F5F9; color: #475569; }
+        .cst-badge-info     { background: var(--info-bg);    color: var(--info); }
+        .cst-badge-warning  { background: var(--warning-bg); color: var(--warning); }
+        .cst-badge-primary  { background: var(--cp-light);   color: var(--cp); }
+        .cst-badge-success  { background: var(--success-bg); color: var(--success); }
+        .cst-badge-dark     { background: #1E293B; color: #F1F5F9; }
+        .cst-badge-danger   { background: var(--danger-bg);  color: var(--danger); }
+
+        /* Buttons */
+        .cst-btn { display: inline-flex; align-items: center; gap: .35rem; height: 30px; padding: 0 .75rem; border-radius: var(--radius); font-family: var(--font); font-size: .775rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background var(--t), box-shadow var(--t), color var(--t), border-color var(--t); white-space: nowrap; border: 1px solid transparent; letter-spacing: -.01em; flex-shrink: 0; line-height: 1; }
+        .cst-btn-primary   { background: var(--cp); color: #fff; border-color: var(--cp); }
+        .cst-btn-primary:hover { background: var(--cp-dark); border-color: var(--cp-dark); box-shadow: 0 2px 8px rgba(91,79,233,.28); color: #fff; text-decoration: none; }
+        .cst-btn-outline   { background: var(--surface); color: var(--text-2); border-color: var(--border); }
+        .cst-btn-outline:hover { background: var(--hover); color: var(--text); text-decoration: none; }
+        .cst-btn-danger    { background: var(--surface); color: var(--danger); border-color: var(--border); }
+        .cst-btn-danger:hover { background: var(--danger-bg); border-color: var(--danger); text-decoration: none; }
+        .cst-btn-success   { background: var(--success); color: #fff; border-color: var(--success); }
+        .cst-btn-success:hover { background: #15803D; color: #fff; box-shadow: 0 2px 8px rgba(22,163,74,.25); text-decoration: none; }
+        .cst-btn-sm  { height: 26px; padding: 0 .625rem; font-size: .7375rem; }
+        .cst-btn-lg  { height: 38px; padding: 0 1.125rem; font-size: .875rem; }
+        .cst-btn-block { width: 100%; justify-content: center; }
+
+        /* Empty state */
+        .cst-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; }
+        .cst-empty-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--hover); display: flex; align-items: center; justify-content: center; margin-bottom: .875rem; color: var(--label); }
+        .cst-empty h4 { font-size: .9375rem; font-weight: 600; color: var(--text-2); margin: 0 0 .375rem; }
+        .cst-empty p  { font-size: .8125rem; color: var(--muted); margin: 0 0 1.25rem; max-width: 320px; }
+
+        /* Form inputs */
+        .cst-form-group { margin-bottom: 1.25rem; }
+        .cst-label { display: block; font-size: .8125rem; font-weight: 500; color: var(--text-2); margin-bottom: .375rem; }
+        .cst-label .opt { color: var(--muted); font-weight: 400; }
+        .cst-input, .cst-select, .cst-textarea { display: block; width: 100%; padding: .5rem .75rem; font-family: var(--font); font-size: .875rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); transition: border-color var(--t), box-shadow var(--t); outline: none; -webkit-appearance: none; appearance: none; }
+        .cst-input:focus, .cst-select:focus, .cst-textarea:focus { border-color: var(--cp); box-shadow: 0 0 0 3px var(--cp-ring); }
+        .cst-textarea { resize: vertical; min-height: 90px; line-height: 1.5; padding-top: .625rem; }
+        .cst-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .75rem center; padding-right: 2.25rem; cursor: pointer; }
+        .cst-field-error { font-size: .75rem; color: var(--danger); margin-top: .25rem; }
+        .cst-form-hint  { font-size: .75rem; color: var(--muted); margin-top: .25rem; }
+
+        /* Alert */
+        .cst-alert { display: flex; align-items: flex-start; gap: .625rem; padding: .75rem 1rem; border-radius: var(--radius); font-size: .8125rem; border: 1px solid; margin-bottom: 1.25rem; }
+        .cst-alert ul { margin: .2rem 0 0; padding-left: 1.1rem; }
+        .cst-alert li { font-size: .75rem; margin-top: .15rem; }
+        .cst-alert-danger  { background: var(--danger-bg);  color: var(--danger);  border-color: rgba(220,38,38,.2); }
+        .cst-alert-success { background: var(--success-bg); color: var(--success); border-color: rgba(22,163,74,.2); }
+        .cst-alert-warning { background: var(--warning-bg); color: var(--warning); border-color: rgba(217,119,6,.2); }
+
+        /* Grid helpers */
+        .cst-grid-2   { display: grid; grid-template-columns: 1fr 1fr;  gap: 1.25rem; }
+        .cst-grid-5-7 { display: grid; grid-template-columns: 5fr 7fr;  gap: 1.25rem; }
+        @@media (max-width: 767px) { .cst-grid-2, .cst-grid-5-7 { grid-template-columns: 1fr; } }
+
+        /* Detail list */
+        .cst-dl { font-size: .8125rem; }
+        .cst-dl-row { display: flex; padding: .5rem 0; border-bottom: 1px solid var(--border); gap: 1.5rem; align-items: flex-start; }
+        .cst-dl-row:last-child { border-bottom: none; }
+        .cst-dl-row dt { color: var(--muted); font-weight: 500; min-width: 120px; flex-shrink: 0; }
+        .cst-dl-row dd { color: var(--text-2); font-weight: 500; margin: 0; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    @* ── Sidebar ── *@
+    <aside class="cst-sidebar" id="cstSidebar">
+
+        @* Logo *@
+        <a href="/" class="cst-logo">
+            <span class="cst-logo-icon">🚲</span>
+            <span class="cst-logo-text">BikeService</span>
+        </a>
+
+        @* User greeting strip *@
+        <div class="cst-user-strip">
+            <span class="cst-strip-avatar">@initial</span>
+            <div class="cst-strip-info">
+                <div class="cst-strip-name">@fullName</div>
+                <div class="cst-strip-role">Customer account</div>
+            </div>
+        </div>
+
+        @* Navigation *@
+        <nav class="cst-nav">
+
+            <div class="cst-nav-section">
+                <span class="cst-nav-label">My Portal</span>
+
+                @* Book Appointment — CTA *@
+                <a class="cst-nav-cta @(IsActive("Appointment","Create") ? "active" : "")"
+                   asp-controller="Appointment" asp-action="Create" data-label="Book Appointment">
+                    <span class="cst-nav-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">Book Appointment</span>
+                </a>
+
+                <a class="cst-nav-item @(IsActive("ServiceTicket") ? "active" : "")"
+                   asp-controller="ServiceTicket" asp-action="Index" data-label="My Tickets">
+                    <span class="cst-nav-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">My Tickets</span>
+                </a>
+
+                <a class="cst-nav-item @(IsActive("Appointment","Index") ? "active" : "")"
+                   asp-controller="Appointment" asp-action="Index" data-label="My Appointments">
+                    <span class="cst-nav-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">My Appointments</span>
+                </a>
+
+                <a class="cst-nav-item @(IsActive("Invoice") ? "active" : "")"
+                   asp-controller="Invoice" asp-action="Index" data-label="My Invoices">
+                    <span class="cst-nav-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">My Invoices</span>
+                </a>
+
+                <a class="cst-nav-item @(IsActive("Notification") ? "active" : "")"
+                   asp-controller="Notification" asp-action="Index" data-label="Notifications">
+                    <span class="cst-nav-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">Notifications</span>
+                    @if (unread > 0)
+                    {
+                        <span class="cst-nav-count">@(unread > 99 ? "99+" : unread.ToString())</span>
+                    }
+                </a>
+            </div>
+
+            <div class="cst-nav-section">
+                <span class="cst-nav-label">Account</span>
+                <a class="cst-nav-item @(IsActive("Account","Profile") ? "active" : "")"
+                   asp-controller="Account" asp-action="Profile" data-label="Profile">
+                    <span class="cst-nav-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </span>
+                    <span class="cst-nav-text">Profile</span>
+                </a>
+            </div>
+
+        </nav>
+
+        @* Collapse toggle *@
+        <div class="cst-sidebar-foot">
+            <button class="cst-collapse-btn" id="cstCollapseBtn" title="Collapse sidebar" type="button">
+                <span class="cst-collapse-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </span>
+                <span class="cst-collapse-text">Collapse</span>
+            </button>
+        </div>
+
+    </aside>
+
+    @* ── Main wrapper ── *@
+    <div class="cst-wrap" id="cstWrap">
+
+        @* ── Topbar ── *@
+        <header class="cst-topbar">
+            <div class="cst-topbar-left">
+                <button class="cst-toggle-btn" id="cstToggleBtn" type="button" title="Toggle sidebar">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6"  x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+                <h1 class="cst-page-title">@pageTitle</h1>
+            </div>
+
+            @* Book Appointment quick action *@
+            <a asp-controller="Appointment" asp-action="Create" class="cst-book-btn">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Book Appointment
+            </a>
+
+            <div class="cst-topbar-right">
+
+                @* Notification bell *@
+                <a asp-controller="Notification" asp-action="Index"
+                   class="cst-icon-btn"
+                   title="@(unread > 0 ? $"{unread} unread notification{(unread == 1 ? "" : "s")}" : "Notifications")">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                    @if (unread > 0)
+                    {
+                        <span class="cst-bell-count">@(unread > 99 ? "99+" : unread.ToString())</span>
+                    }
+                </a>
+
+                <div class="cst-topbar-divider"></div>
+
+                @* User dropdown *@
+                <div class="cst-user-drop" id="cstUserDrop">
+                    <button class="cst-user-btn" id="cstUserBtn" type="button">
+                        <span class="cst-avatar">@initial</span>
+                        <span class="cst-user-name">@fullName</span>
+                        <span class="cst-user-caret">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </span>
+                    </button>
+
+                    <div class="cst-drop-menu" id="cstDropMenu">
+                        <div class="cst-drop-head">
+                            <div class="cst-drop-head-name">@fullName</div>
+                            <div class="cst-drop-head-email">Customer</div>
+                        </div>
+                        <a asp-controller="Account" asp-action="Profile" class="cst-drop-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            My Profile
+                        </a>
+                        <a asp-controller="Account" asp-action="ChangePassword" class="cst-drop-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            </svg>
+                            Change Password
+                        </a>
+                        <a asp-controller="Home" asp-action="Index" class="cst-drop-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                            Go to Home
+                        </a>
+                        <div class="cst-drop-divider"></div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                            <button type="submit" class="cst-drop-item danger">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                Sign Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        @* ── Page content ── *@
+        <main class="cst-content">
+            @RenderBody()
+        </main>
+
+        @* ── Footer ── *@
+        <footer class="cst-footer">
+            <span>&copy; @DateTime.Now.Year BikeService. All rights reserved.</span>
+            <span>
+                <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+                &middot;
+                <a href="/">Home</a>
+            </span>
+        </footer>
+
+    </div>
+
+    @* Mobile overlay *@
+    <div class="cst-overlay" id="cstOverlay" onclick="cstCloseMobile()"></div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        (function () {
+            var sidebar     = document.getElementById('cstSidebar');
+            var wrap        = document.getElementById('cstWrap');
+            var overlay     = document.getElementById('cstOverlay');
+            var toggleBtn   = document.getElementById('cstToggleBtn');
+            var collapseBtn = document.getElementById('cstCollapseBtn');
+            var userDrop    = document.getElementById('cstUserDrop');
+            var userBtn     = document.getElementById('cstUserBtn');
+
+            var isMobile = function () { return window.innerWidth < 768; };
+
+            // Restore mini state on desktop load
+            if (!isMobile() && localStorage.getItem('cstSidebarMini') === '1') {
+                sidebar && sidebar.classList.add('mini');
+                wrap    && wrap.classList.add('mini');
+            }
+
+            // Topbar hamburger toggle
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function () {
+                    if (isMobile()) {
+                        sidebar.classList.toggle('open');
+                        overlay.classList.toggle('show');
+                    } else {
+                        sidebar.classList.toggle('mini');
+                        wrap.classList.toggle('mini');
+                        localStorage.setItem('cstSidebarMini', sidebar.classList.contains('mini') ? '1' : '0');
+                    }
+                });
+            }
+
+            // Sidebar collapse button
+            if (collapseBtn) {
+                collapseBtn.addEventListener('click', function () {
+                    sidebar.classList.toggle('mini');
+                    wrap.classList.toggle('mini');
+                    localStorage.setItem('cstSidebarMini', sidebar.classList.contains('mini') ? '1' : '0');
+                });
+            }
+
+            // Close mobile drawer
+            window.cstCloseMobile = function () {
+                sidebar && sidebar.classList.remove('open');
+                overlay && overlay.classList.remove('show');
+            };
+
+            // User dropdown
+            if (userBtn && userDrop) {
+                userBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    userDrop.classList.toggle('open');
+                });
+                document.addEventListener('click', function () { userDrop.classList.remove('open'); });
+                var menu = document.getElementById('cstDropMenu');
+                if (menu) menu.addEventListener('click', function (e) { e.stopPropagation(); });
+            }
+
+            // Reset on resize
+            window.addEventListener('resize', function () {
+                if (!isMobile()) {
+                    overlay && overlay.classList.remove('show');
+                    sidebar && sidebar.classList.remove('open');
+                } else {
+                    wrap && wrap.classList.remove('mini');
+                }
+            });
+        })();
+
+        @if (TempData["Success"] != null)
+        {
+            <text>
+            Swal.fire({ icon: 'success', title: 'Success', text: '@Html.Raw(TempData["Success"])', timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' });
+            </text>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <text>
+            Swal.fire({ icon: 'error', title: 'Error', text: '@Html.Raw(TempData["Error"])' });
+            </text>
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+@model BikeService.Application.DTOs.Invoice.InvoiceDto
+@using BikeService.Domain.Enums
+@{
+    ViewData["Title"] = $"Invoice #{Model.Id}";
+
+    var (iBadge, iLbl) = Model.Status switch
+    {
+        InvoiceStatus.Draft  => ("cst-badge-pending", "Draft"),
+        InvoiceStatus.Issued => ("cst-badge-warning", "Issued"),
+        InvoiceStatus.Paid   => ("cst-badge-success", "Paid"),
+        InvoiceStatus.Void   => ("cst-badge-danger",  "Void"),
+        _                    => ("cst-badge-pending",  Model.StatusLabel)
+    };
+}
+
+@* ── Page header ── *@
+<div class="cst-page-head">
+    <div class="cst-page-head-left">
+        <a asp-action="Index" class="cst-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            My Invoices
+        </a>
+        <span style="color:var(--border);">/</span>
+        <h2>Invoice #@Model.Id</h2>
+        <span class="cst-badge @iBadge">@iLbl</span>
+    </div>
+    <a asp-action="Download" asp-route-id="@Model.Id" class="cst-btn cst-btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download PDF
+    </a>
+</div>
+
+<div class="cst-grid-5-7">
+
+    @* ── Summary card ── *@
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <span class="cst-card-title">Summary</span>
+        </div>
+        <div class="cst-card-body">
+            <dl class="cst-dl">
+                <div class="cst-dl-row">
+                    <dt>Bike</dt>
+                    <dd>@Model.BikeSummary</dd>
+                </div>
+                <div class="cst-dl-row">
+                    <dt>Issued</dt>
+                    <dd>@Model.CreatedAt.ToString("MMM d, yyyy")</dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.PromoCode))
+                {
+                    <div class="cst-dl-row">
+                        <dt>Promo Code</dt>
+                        <dd style="color:var(--success);font-weight:600;">@Model.PromoCode</dd>
+                    </div>
+                }
+            </dl>
+
+            <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1rem;">
+                <div style="display:flex;justify-content:space-between;font-size:.8125rem;padding:.375rem 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);">Subtotal</span>
+                    <span>৳@Model.TotalAmount.ToString("N2")</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:.8125rem;padding:.375rem 0;border-bottom:1px solid var(--border);">
+                    <span style="color:var(--muted);">Tax (15%)</span>
+                    <span>৳@Model.TaxAmount.ToString("N2")</span>
+                </div>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <div style="display:flex;justify-content:space-between;font-size:.8125rem;padding:.375rem 0;border-bottom:1px solid var(--border);color:var(--success);">
+                        <span>Discount</span>
+                        <span>-৳@Model.DiscountAmount.ToString("N2")</span>
+                    </div>
+                }
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 0 0;border-top:2px solid var(--border);margin-top:.25rem;">
+                    <span style="font-weight:700;font-size:.9375rem;">Total</span>
+                    <span style="font-weight:800;font-size:1.25rem;color:var(--cp);">৳@Model.FinalAmount.ToString("N2")</span>
+                </div>
+            </div>
+
+            @if (Model.Status == InvoiceStatus.Issued)
+            {
+                <div style="margin-top:1.25rem;">
+                    <a asp-controller="Payment" asp-action="Checkout"
+                       asp-route-invoiceId="@Model.Id"
+                       class="cst-btn cst-btn-success cst-btn-block cst-btn-lg">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        Pay Now
+                    </a>
+                </div>
+            }
+            else if (Model.Status == InvoiceStatus.Paid)
+            {
+                <div class="cst-alert cst-alert-success" style="margin-top:1.25rem;margin-bottom:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:.1rem;">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Payment received — thank you!
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ── Payment History card ── *@
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <span class="cst-card-title">Payment History</span>
+        </div>
+        @if (!Model.PaymentTransactions.Any())
+        {
+            <div class="cst-empty" style="padding:2.5rem 2rem;">
+                <div class="cst-empty-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                </div>
+                <p style="margin:0;">No payment attempts yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="cst-table-wrap">
+                <table class="cst-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Gateway</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var tx in Model.PaymentTransactions.OrderByDescending(t => t.CreatedAt))
+                        {
+                            <tr>
+                                <td class="muted">@tx.CreatedAt.ToString("MMM d, h:mm tt")</td>
+                                <td>@tx.GatewayName</td>
+                                <td style="font-weight:600;">৳@tx.Amount.ToString("N2")</td>
+                                <td>
+                                    @{
+                                        var txBadge = tx.Status switch
+                                        {
+                                            BikeService.Domain.Enums.PaymentTransactionStatus.Success  => "cst-badge-success",
+                                            BikeService.Domain.Enums.PaymentTransactionStatus.Failed   => "cst-badge-danger",
+                                            BikeService.Domain.Enums.PaymentTransactionStatus.Refunded => "cst-badge-warning",
+                                            _                                                           => "cst-badge-pending"
+                                        };
+                                    }
+                                    <span class="cst-badge @txBadge">@tx.StatusLabel</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+</div>

@@ -1,0 +1,78 @@
+@model BikeService.Web.ViewModels.ServiceTicket.WalkInTicketFormViewModel
+@{
+    ViewData["Title"] = "New Walk-In Ticket";
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">New Walk-In Ticket</h4>
+        <small class="text-muted">Create a service ticket for a customer who walked in</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Bike -->
+                    <div class="mb-3">
+                        <label asp-for="BikeId" class="form-label fw-semibold">Customer Bike</label>
+                        <select asp-for="BikeId" asp-items="ViewBag.Bikes" class="form-select">
+                            <option value="">— Select bike —</option>
+                        </select>
+                        <span asp-validation-for="BikeId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Mechanic -->
+                    <div class="mb-3">
+                        <label asp-for="MechanicId" class="form-label fw-semibold">
+                            Assign Mechanic <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <select asp-for="MechanicId" asp-items="ViewBag.Mechanics" class="form-select">
+                            <option value="">— Assign later —</option>
+                        </select>
+                        <span asp-validation-for="MechanicId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Estimated completion -->
+                    <div class="mb-3">
+                        <label asp-for="EstimatedCompletionDate" class="form-label fw-semibold">
+                            Estimated Completion <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <input asp-for="EstimatedCompletionDate" type="date" class="form-control"
+                               value="@Model.EstimatedCompletionDate?.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="EstimatedCompletionDate" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Diagnosis notes -->
+                    <div class="mb-4">
+                        <label asp-for="DiagnosisNotes" class="form-label fw-semibold">
+                            Initial Notes <span class="text-muted fw-normal">(optional)</span>
+                        </label>
+                        <textarea asp-for="DiagnosisNotes" class="form-control" rows="4"
+                                  placeholder="Describe the issue reported by the customer…"></textarea>
+                        <span asp-validation-for="DiagnosisNotes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-plus-lg me-1"></i> Create Ticket
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

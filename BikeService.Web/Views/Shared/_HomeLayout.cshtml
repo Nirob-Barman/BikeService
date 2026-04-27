@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BikeService</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            background: #fff;
+            color: #0F172A;
+        }
+        /* Remove default Bootstrap container margin on this layout */
+        body > main { margin: 0; padding: 0; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+
+    @await Html.PartialAsync("_NavBar")
+
+    <main>
+        @RenderBody()
+    </main>
+
+    @* ── Footer ── *@
+    <footer style="background:#0A0A0F;color:rgba(255,255,255,.55);padding:3rem 0 2rem;font-family:'Inter',system-ui,sans-serif;">
+        <div style="max-width:1200px;margin:0 auto;padding:0 1.5rem;">
+            <div style="display:grid;grid-template-columns:1fr;gap:2.5rem;margin-bottom:2.5rem;">
+                <div style="max-width:320px;">
+                    <a href="/" style="display:inline-flex;align-items:center;gap:.5rem;text-decoration:none;margin-bottom:1rem;">
+                        <span style="width:28px;height:28px;background:#5B4FE9;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;">🚲</span>
+                        <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:-.02em;">BikeService</span>
+                    </a>
+                    <p style="font-size:.875rem;line-height:1.65;margin:0;">
+                        Professional bike repair and maintenance. Book online, track real-time, pay securely.
+                    </p>
+                </div>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,.08);padding-top:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+                <p style="margin:0;font-size:.8rem;">&copy; @DateTime.Now.Year BikeService. All rights reserved.</p>
+                <div style="display:flex;gap:1.25rem;">
+                    <a asp-controller="Home" asp-action="Privacy" style="font-size:.8rem;color:rgba(255,255,255,.45);text-decoration:none;">Privacy</a>
+                    <a href="#" style="font-size:.8rem;color:rgba(255,255,255,.45);text-decoration:none;">Terms</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    @* Transparent-to-frosted navbar scroll handler *@
+    <script>
+        (function () {
+            var nav = document.getElementById('siteNav');
+            if (!nav) return;
+
+            function update() {
+                if (window.scrollY > 60) {
+                    nav.classList.remove('nav-top');
+                } else {
+                    nav.classList.add('nav-top');
+                }
+            }
+            nav.classList.add('nav-top');
+            window.addEventListener('scroll', update, { passive: true });
+        })();
+    </script>
+
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            Swal.fire({ icon: 'success', title: 'Success', text: '@Html.Raw(TempData["Success"])', timer: 3000, showConfirmButton: false });
+        </script>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <script>
+            Swal.fire({ icon: 'error', title: 'Error', text: '@Html.Raw(TempData["Error"])' });
+        </script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

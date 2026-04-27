@@ -1,0 +1,93 @@
+@model List<BikeService.Application.DTOs.Invoice.InvoiceDto>
+@using BikeService.Domain.Enums
+@{
+    ViewData["Title"] = "My Invoices";
+}
+
+<div class="cst-page-head">
+    <div class="cst-page-head-left">
+        <h2>My Invoices</h2>
+        @if (Model.Any())
+        {
+            <span class="cst-badge cst-badge-pending">@Model.Count total</span>
+        }
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="cst-card">
+        <div class="cst-empty">
+            <div class="cst-empty-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+            </div>
+            <h4>No invoices yet</h4>
+            <p>Invoices are generated after your service is completed and ready for pickup.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="cst-card">
+        <div class="cst-table-wrap">
+            <table class="cst-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Bike</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th class="r"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inv in Model.OrderByDescending(i => i.CreatedAt))
+                    {
+                        <tr>
+                            <td class="muted">#@inv.Id</td>
+                            <td class="bold">@inv.BikeSummary</td>
+                            <td class="muted">@inv.CreatedAt.ToString("MMM d, yyyy")</td>
+                            <td style="font-weight:600;color:var(--text);">৳@inv.FinalAmount.ToString("N2")</td>
+                            <td>
+                                @{
+                                    var (iBadge, iLbl) = inv.Status switch
+                                    {
+                                        InvoiceStatus.Draft  => ("cst-badge-pending", "Draft"),
+                                        InvoiceStatus.Issued => ("cst-badge-warning", "Issued"),
+                                        InvoiceStatus.Paid   => ("cst-badge-success", "Paid"),
+                                        InvoiceStatus.Void   => ("cst-badge-danger",  "Void"),
+                                        _                    => ("cst-badge-pending", inv.StatusLabel)
+                                    };
+                                }
+                                <span class="cst-badge @iBadge">@iLbl</span>
+                            </td>
+                            <td class="r" style="display:flex;align-items:center;gap:.375rem;justify-content:flex-end;">
+                                <a asp-action="Detail" asp-route-id="@inv.Id" class="cst-btn cst-btn-outline cst-btn-sm">View</a>
+                                <a asp-action="Download" asp-route-id="@inv.Id" class="cst-btn cst-btn-outline cst-btn-sm" title="Download PDF">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    PDF
+                                </a>
+                                @if (inv.Status == InvoiceStatus.Issued)
+                                {
+                                    <a asp-controller="Payment" asp-action="Checkout"
+                                       asp-route-invoiceId="@inv.Id"
+                                       class="cst-btn cst-btn-success cst-btn-sm">Pay Now</a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

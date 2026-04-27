@@ -1,0 +1,88 @@
+@using BikeService.Application.DTOs.Appointment
+@using BikeService.Domain.Enums
+@model List<AppointmentDto>
+@{
+    ViewData["Title"] = "Appointments";
+
+    string GetStatusColor(AppointmentStatus s) => s switch
+    {
+        AppointmentStatus.Scheduled => "secondary",
+        AppointmentStatus.Confirmed => "primary",
+        AppointmentStatus.Completed => "success",
+        AppointmentStatus.Cancelled => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Appointments</h4>
+    <span class="text-muted small">@Model.Count result(s)</span>
+</div>
+
+<!-- Filter -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-medium">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (AppointmentStatus s in Enum.GetValues(typeof(AppointmentStatus)))
+                    {
+                        <option value="@s" selected="@(ViewBag.StatusFilter?.ToString() == s.ToString() ? "selected" : null)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-medium">Date From</label>
+                <input type="date" name="dateFrom" class="form-control form-control-sm" value="@ViewBag.DateFrom" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-medium">Date To</label>
+                <input type="date" name="dateTo" class="form-control form-control-sm" value="@ViewBag.DateTo" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Bike</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No appointments found.</td>
+                        </tr>
+                    }
+                    @foreach (var appt in Model)
+                    {
+                        <tr>
+                            <td class="fw-medium">@appt.BikeSummary</td>
+                            <td class="text-muted">@appt.CustomerName</td>
+                            <td class="text-muted small">@appt.AppointmentDate.ToString("MMM dd, yyyy HH:mm")</td>
+                            <td><span class="badge bg-@GetStatusColor(appt.Status)">@appt.StatusLabel</span></td>
+                            <td class="text-end">
+                                <a href="@Url.Action("Detail", new { id = appt.Id })" class="btn btn-sm btn-outline-primary">Detail</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

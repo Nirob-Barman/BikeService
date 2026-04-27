@@ -1,0 +1,100 @@
+@using BikeService.Application.DTOs.Invoice
+@using BikeService.Domain.Enums
+@model List<InvoiceDto>
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Invoices";
+
+    string GetStatusColor(InvoiceStatus s) => s switch
+    {
+        InvoiceStatus.Draft => "secondary",
+        InvoiceStatus.Issued => "primary",
+        InvoiceStatus.Paid => "success",
+        InvoiceStatus.Void => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Invoices</h4>
+    <span class="text-muted small">@Model.Count result(s)</span>
+</div>
+
+<!-- Filter -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-medium">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (InvoiceStatus s in Enum.GetValues(typeof(InvoiceStatus)))
+                    {
+                        <option value="@s" selected="@(ViewBag.StatusFilter?.ToString() == s.ToString() ? "selected" : null)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#ID</th>
+                        <th>Ticket</th>
+                        <th>Bike</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No invoices found.</td>
+                        </tr>
+                    }
+                    @foreach (var invoice in Model)
+                    {
+                        <tr>
+                            <td class="text-muted small">#@invoice.Id</td>
+                            <td class="text-muted">#@invoice.ServiceTicketId</td>
+                            <td class="fw-medium">@invoice.BikeSummary</td>
+                            <td class="fw-semibold">$@invoice.FinalAmount.ToString("0.00")</td>
+                            <td><span class="badge bg-@GetStatusColor(invoice.Status)">@invoice.StatusLabel</span></td>
+                            <td class="text-muted small">@invoice.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="text-end">
+                                <a href="@Url.Action("Detail", new { id = invoice.Id })" class="btn btn-sm btn-outline-primary">Detail</a>
+                                @if (invoice.Status == InvoiceStatus.Draft)
+                                {
+                                    <form method="post" asp-action="Issue" asp-route-id="@invoice.Id" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success ms-1">Issue</button>
+                                    </form>
+                                }
+                                @if (invoice.Status == InvoiceStatus.Draft || invoice.Status == InvoiceStatus.Issued)
+                                {
+                                    <form method="post" asp-action="Void" asp-route-id="@invoice.Id" class="d-inline"
+                                          onsubmit="return confirm('Void invoice #@invoice.Id?')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1">Void</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

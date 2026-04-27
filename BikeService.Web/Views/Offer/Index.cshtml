@@ -1,0 +1,63 @@
+@model List<BikeService.Application.DTOs.PromoCode.PromoCodeDto>
+@{
+    ViewData["Title"] = "Current Offers";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+
+    <div class="text-center mb-5">
+        <h2 class="fw-bold">Current Offers</h2>
+        <p class="text-muted">Use a promo code at checkout to save on your next service</p>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="row gy-4 justify-content-center">
+            @foreach (var promo in Model)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #0d6efd !important;">
+                        <div class="card-body p-4 text-center">
+                            <div style="font-size:2rem;" class="mb-2">🏷️</div>
+                            <div class="display-6 fw-bold text-primary mb-1">@promo.DiscountPercent%</div>
+                            <div class="text-muted small mb-3">discount on any service</div>
+                            <div class="bg-light rounded px-3 py-2 mb-3 d-inline-block">
+                                <span class="fw-bold font-monospace fs-5 text-dark">@promo.Code</span>
+                            </div>
+                            <div class="text-muted small">
+                                @if (promo.ExpiresAt.HasValue)
+                                {
+                                    <span>Expires @promo.ExpiresAt.Value.ToString("MMM d, yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span>No expiry date</span>
+                                }
+                            </div>
+                            @if (promo.RemainingUsages <= 5 && promo.RemainingUsages > 0)
+                            {
+                                <div class="mt-2">
+                                    <span class="badge bg-warning text-dark">Only @promo.RemainingUsages left!</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="card-footer bg-transparent border-0 pb-4 text-center">
+                            <a asp-controller="Appointment" asp-action="Create"
+                               class="btn btn-primary btn-sm px-4">Book & Use Code</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5 text-muted">
+            <div style="font-size:3rem;" class="mb-3">🎫</div>
+            <p>No active offers at the moment. Check back soon!</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary btn-sm">&larr; Back to Home</a>
+        </div>
+    }
+
+</div>

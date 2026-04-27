@@ -1,0 +1,155 @@
+@using BikeService.Application.Payment
+@using BikeService.Web.ViewModels.PaymentGateway
+@model PaymentGatewayFormViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Edit Payment Gateway";
+
+    var schema = GatewayConfigSchema.Get(Model.Slug);
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    <h4 class="mb-0 fw-semibold">Edit Payment Gateway</h4>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Gateway</label>
+                        <input type="text" class="form-control" value="@(schema?.DisplayName ?? Model.Slug)" readonly />
+                        @{
+                            var family = GatewayConfigSchema.GetFamily(Model.Slug);
+                            if (family?.HasVariants == true)
+                            {
+                                <div class="form-text text-muted">Service type: <strong>@schema?.VariantLabel</strong></div>
+                            }
+                        }
+                        <input type="hidden" asp-for="Slug" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-medium">Display Name <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    @if (schema != null)
+                    {
+                        <hr class="my-3" />
+                        <p class="text-muted small mb-3">
+                            Credentials are encrypted in the database.
+                            Leave <strong>secret fields blank</strong> to keep the existing value.
+                            Non-secret fields are pre-filled.
+                        </p>
+
+                        @foreach (var field in schema.Fields)
+                        {
+                            var inputName  = GatewayFieldName(Model.Slug, field.Key);
+                            var inputValue = GetFieldValue(Model, inputName);
+                            <div class="mb-3">
+                                <label class="form-label fw-medium">
+                                    @field.Label
+                                    @if (field.IsSecret)
+                                    {
+                                        <span class="badge bg-secondary ms-1" style="font-size:0.65rem">secret</span>
+                                    }
+                                </label>
+                                @if (field.IsSecret)
+                                {
+                                    <input type="password"
+                                           name="@inputName"
+                                           class="form-control"
+                                           placeholder="Leave blank to keep existing"
+                                           autocomplete="new-password" />
+                                }
+                                else
+                                {
+                                    <input type="text"
+                                           name="@inputName"
+                                           value="@inputValue"
+                                           class="form-control"
+                                           placeholder="@(field.Placeholder ?? "")" />
+                                }
+                            </div>
+                        }
+                    }
+
+                    <div class="row mb-3 mt-3">
+                        <div class="col-sm-6">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsSandbox" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsSandbox" class="form-check-label">Sandbox / Test Mode</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+@functions {
+    static string GatewayFieldName(string slug, string key) =>
+        slug switch
+        {
+            "stripe_checkout" or "stripe_payment_intents" => key switch {
+                "secret_key"      => "Stripe_SecretKey",
+                "publishable_key" => "Stripe_PublishableKey",
+                "webhook_secret"  => "Stripe_WebhookSecret",
+                _ => key
+            },
+            "sslcommerz_hosted" or "sslcommerz_easy" => key switch {
+                "store_id"   => "Ssl_StoreId",
+                "store_pass" => "Ssl_StorePassword",
+                _ => key
+            },
+            "bkash_checkout" or "bkash_tokenized" or "bkash_webhook" => key switch {
+                "app_key"        => "Bkash_AppKey",
+                "app_secret"     => "Bkash_AppSecret",
+                "username"       => "Bkash_Username",
+                "password"       => "Bkash_Password",
+                "webhook_secret" => "Bkash_WebhookSecret",
+                _ => key
+            },
+            "surjopay_checkout" or "surjopay_seamless" => key switch {
+                "store_id"   => "Surjo_StoreId",
+                "store_pass" => "Surjo_StorePassword",
+                _ => key
+            },
+            _ => key
+        };
+
+    static string? GetFieldValue(PaymentGatewayFormViewModel vm, string propName) =>
+        propName switch
+        {
+            "Stripe_PublishableKey" => vm.Stripe_PublishableKey,
+            "Ssl_StoreId"          => vm.Ssl_StoreId,
+            "Bkash_AppKey"         => vm.Bkash_AppKey,
+            "Bkash_Username"       => vm.Bkash_Username,
+            "Surjo_StoreId"        => vm.Surjo_StoreId,
+            _                      => null
+        };
+
+}

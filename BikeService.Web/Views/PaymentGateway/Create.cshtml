@@ -1,0 +1,207 @@
+@using BikeService.Application.Payment
+@using BikeService.Web.ViewModels.PaymentGateway
+@model PaymentGatewayFormViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Add Payment Gateway";
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    <h4 class="mb-0 fw-semibold">Add Payment Gateway</h4>
+</div>
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form method="post" asp-action="Create">
+                    @Html.AntiForgeryToken()
+
+                    @* Hidden slug — set by JS from family+variant selection *@
+                    <input type="hidden" id="slugHidden" name="Slug" value="@Model.Slug" />
+                    <span asp-validation-for="Slug" class="text-danger small"></span>
+
+                    @* Step 1: Gateway family *@
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Gateway <span class="text-danger">*</span></label>
+                        <select id="familySelect" class="form-select">
+                            <option value="">-- Select a gateway --</option>
+                            @foreach (var family in GatewayConfigSchema.Families)
+                            {
+                                <option value="@family.Key">@family.DisplayName</option>
+                            }
+                        </select>
+                    </div>
+
+                    @* Step 2: Variant (shown only when family has multiple variants) *@
+                    <div class="mb-3 d-none" id="variantRow">
+                        <label class="form-label fw-medium">Service Type <span class="text-danger">*</span></label>
+                        <select id="variantSelect" class="form-select">
+                            <option value="">-- Select a service type --</option>
+                        </select>
+                        <div class="form-text text-muted">Choose the integration method offered by this gateway.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-medium">Display Name <span class="text-danger">*</span></label>
+                        <input asp-for="Name" id="nameInput" class="form-control" placeholder="e.g. bKash Checkout (Live)" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    @* Dynamic credential fields — one panel per slug, shown/hidden by JS *@
+                    @foreach (var gw in GatewayConfigSchema.All)
+                    {
+                        <div class="gateway-fields d-none" data-slug="@gw.Slug">
+                            @if (gw.Fields.Any())
+                            {
+                                <hr class="my-3" />
+                                <p class="text-muted small mb-3">@gw.DisplayName credentials — all values are encrypted before storage.</p>
+                                @foreach (var field in gw.Fields)
+                                {
+                                    var inputName = GatewayFieldName(gw.Slug, field.Key);
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium">
+                                            @field.Label
+                                            @if (field.IsRequired) { <span class="text-danger">*</span> }
+                                            @if (field.IsSecret) { <span class="badge bg-secondary ms-1" style="font-size:.65rem">secret</span> }
+                                        </label>
+                                        <input type="@(field.IsSecret ? "password" : "text")"
+                                               name="@inputName"
+                                               class="form-control"
+                                               placeholder="@(field.Placeholder ?? "")"
+                                               autocomplete="off" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="row mb-3 mt-3">
+                        <div class="col-sm-6">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-check form-switch">
+                                <input asp-for="IsSandbox" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsSandbox" class="form-check-label">Sandbox / Test Mode</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Create Gateway</button>
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            // Family → variants map built from server
+            const families = {
+                @Html.Raw(string.Join(",\n                ", GatewayConfigSchema.Families.Select(f =>
+                    $"'{f.Key}': {{ hasVariants: {(f.HasVariants ? "true" : "false")}, variants: [{string.Join(", ", f.Variants.Select(v => $"{{ slug: '{v.Slug}', label: '{v.VariantLabel}', displayName: '{v.DisplayName}' }}"))}] }}"
+                )))
+            };
+
+            const familySelect  = document.getElementById('familySelect');
+            const variantRow    = document.getElementById('variantRow');
+            const variantSelect = document.getElementById('variantSelect');
+            const slugHidden    = document.getElementById('slugHidden');
+            const nameInput     = document.getElementById('nameInput');
+            let autoFilledName  = '';
+
+            function showFields(slug) {
+                document.querySelectorAll('.gateway-fields').forEach(el => el.classList.add('d-none'));
+                if (slug) {
+                    const panel = document.querySelector(`.gateway-fields[data-slug="${slug}"]`);
+                    if (panel) panel.classList.remove('d-none');
+                }
+            }
+
+            function applySlug(slug, displayName) {
+                slugHidden.value = slug;
+                showFields(slug);
+                if (displayName && nameInput.value.trim() === autoFilledName) {
+                    autoFilledName = displayName;
+                    nameInput.value = displayName;
+                }
+            }
+
+            familySelect.addEventListener('change', function () {
+                const key = this.value;
+                const family = families[key];
+
+                // Reset variant dropdown
+                variantSelect.innerHTML = '<option value="">-- Select a service type --</option>';
+                variantRow.classList.add('d-none');
+                showFields('');
+                slugHidden.value = '';
+
+                if (!family) return;
+
+                if (family.hasVariants) {
+                    family.variants.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.slug;
+                        opt.textContent = v.label;
+                        variantSelect.appendChild(opt);
+                    });
+                    variantRow.classList.remove('d-none');
+                } else {
+                    // Single-variant — auto-select immediately
+                    const v = family.variants[0];
+                    applySlug(v.slug, v.displayName);
+                }
+            });
+
+            variantSelect.addEventListener('change', function () {
+                const slug = this.value;
+                if (!slug) { showFields(''); slugHidden.value = ''; return; }
+                const key = familySelect.value;
+                const variant = families[key]?.variants.find(v => v.slug === slug);
+                applySlug(slug, variant?.displayName ?? '');
+            });
+        })();
+    </script>
+}
+
+@functions {
+    static string GatewayFieldName(string slug, string key) => slug switch
+    {
+        "stripe_checkout" or "stripe_payment_intents" => key switch {
+            "secret_key"      => "Stripe_SecretKey",
+            "publishable_key" => "Stripe_PublishableKey",
+            "webhook_secret"  => "Stripe_WebhookSecret",
+            _ => key
+        },
+        "sslcommerz_hosted" or "sslcommerz_easy" => key switch {
+            "store_id"   => "Ssl_StoreId",
+            "store_pass" => "Ssl_StorePassword",
+            _ => key
+        },
+        "bkash_checkout" or "bkash_tokenized" or "bkash_webhook" => key switch {
+            "app_key"        => "Bkash_AppKey",
+            "app_secret"     => "Bkash_AppSecret",
+            "username"       => "Bkash_Username",
+            "password"       => "Bkash_Password",
+            "webhook_secret" => "Bkash_WebhookSecret",
+            _ => key
+        },
+        "surjopay_checkout" or "surjopay_seamless" => key switch {
+            "store_id"   => "Surjo_StoreId",
+            "store_pass" => "Surjo_StorePassword",
+            _ => key
+        },
+        _ => key
+    };
+}

@@ -1,0 +1,60 @@
+@model BikeService.Web.ViewModels.Account.LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = "~/Views/Shared/Auth/_AuthLayout.cshtml";
+}
+
+<h1 class="auth-title">Welcome back</h1>
+<p class="auth-sub">Sign in to your BikeService account</p>
+
+<form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post" id="loginForm">
+
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors" role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" placeholder="you@example.com"
+               autofocus autocomplete="email" type="email" />
+        <span asp-validation-for="Email" class="field-validation-error"></span>
+    </div>
+
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label asp-for="Password" class="form-label mb-0"></label>
+            <a asp-action="ForgotPassword" class="text-decoration-none"
+               style="font-size:.8rem;color:var(--p);font-weight:500;">Forgot password?</a>
+        </div>
+        <div class="pw-wrap">
+            <input asp-for="Password" class="form-control" placeholder="Enter your password"
+                   autocomplete="current-password" id="loginPw" />
+            <button type="button" class="pw-toggle" onclick="pwToggle('loginPw',this)" aria-label="Show password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+        </div>
+        <span asp-validation-for="Password" class="field-validation-error"></span>
+    </div>
+
+    <div class="form-check mb-4">
+        <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+        <label class="form-check-label" for="rememberMe" style="font-size:.85rem;color:var(--muted);">
+            Remember me for 30 days
+        </label>
+    </div>
+
+    <button type="submit" class="btn-auth" id="loginBtn">
+        <span class="spin"></span>
+        <span class="lbl">Sign In</span>
+    </button>
+</form>
+
+<p class="auth-alt">Don't have an account? <a asp-action="Register">Create one free</a></p>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        bindSubmitLoading('loginForm', 'loginBtn');
+    </script>
+}

@@ -1,0 +1,109 @@
+@using System.Security.Claims
+@{
+    var fullName  = User.FindFirstValue(ClaimTypes.Name) ?? "Admin";
+    var email     = User.FindFirstValue(ClaimTypes.Email) ?? "";
+    var initial   = fullName.Length > 0 ? fullName[0].ToString().ToUpper() : "A";
+    var pageTitle = ViewData["Title"]?.ToString() ?? "Dashboard";
+}
+
+<header class="adm-topbar" id="admTopbar">
+
+    <div class="adm-topbar-left">
+        @* Hamburger / sidebar toggle *@
+        <button class="adm-toggle-btn" id="admToggleBtn" title="Toggle sidebar" type="button">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6"  x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+
+        @* Page title *@
+        <h1 class="adm-page-title">@pageTitle</h1>
+    </div>
+
+    @* Search bar *@
+    <div class="adm-search">
+        <span class="adm-search-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+        </span>
+        <input type="text" id="admGlobalSearch" placeholder="Search…" autocomplete="off" />
+    </div>
+
+    <div class="adm-topbar-right">
+
+        @* View site *@
+        <a asp-controller="Home" asp-action="Index" target="_blank"
+           class="adm-icon-btn" title="View Site">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+        </a>
+
+        @* Notification bell *@
+        <button class="adm-icon-btn" type="button" title="Notifications">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span class="adm-notif-dot"></span>
+        </button>
+
+        <div class="adm-topbar-divider"></div>
+
+        @* User dropdown *@
+        <div class="adm-user-drop" id="admUserDrop">
+            <button class="adm-user-btn" id="admUserBtn" type="button">
+                <span class="adm-avatar">@initial</span>
+                <span class="adm-user-name">@fullName</span>
+                <span class="adm-user-caret">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </span>
+            </button>
+
+            <div class="adm-drop-menu" id="admDropMenu">
+                <div class="adm-drop-head">
+                    <div class="adm-drop-head-name">@fullName</div>
+                    <div class="adm-drop-head-role">Administrator</div>
+                </div>
+
+                <a asp-controller="Account" asp-action="Profile" class="adm-drop-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    My Profile
+                </a>
+
+                <a asp-controller="Account" asp-action="ChangePassword" class="adm-drop-item">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                    Change Password
+                </a>
+
+                <div class="adm-drop-divider"></div>
+
+                <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                    <button type="submit" class="adm-drop-item danger">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Sign Out
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</header>

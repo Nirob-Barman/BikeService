@@ -1,0 +1,92 @@
+@using BikeService.Application.DTOs.Notification
+@model List<AppNotificationDto>
+@{
+    ViewData["Title"] = "Notifications";
+    var unread = Model.Count(n => !n.IsRead);
+}
+
+<div class="cst-page-head">
+    <div class="cst-page-head-left">
+        <h2>Notifications</h2>
+        @if (unread > 0)
+        {
+            <span class="cst-badge cst-badge-danger">@unread unread</span>
+        }
+        else if (Model.Any())
+        {
+            <span class="cst-badge cst-badge-success">All caught up</span>
+        }
+    </div>
+    @if (Model.Any() && unread > 0)
+    {
+        <form asp-action="MarkAllRead" method="post" style="margin:0;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="cst-btn cst-btn-outline">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Mark all as read
+            </button>
+        </form>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="cst-card">
+        <div class="cst-empty">
+            <div class="cst-empty-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+            </div>
+            <h4>No notifications</h4>
+            <p>You're all caught up. We'll notify you when something needs your attention.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="cst-card">
+        @foreach (var n in Model)
+        {
+            <div style="display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border);@(!n.IsRead ? "background:var(--cp-light);" : "")transition:background var(--t);">
+
+                @* Unread indicator *@
+                <div style="flex-shrink:0;padding-top:.25rem;">
+                    @if (!n.IsRead)
+                    {
+                        <span style="display:block;width:8px;height:8px;border-radius:50%;background:var(--cp);margin-top:.1rem;"></span>
+                    }
+                    else
+                    {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--label);">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    }
+                </div>
+
+                @* Content *@
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.2rem;">
+                        <span style="font-size:.875rem;font-weight:@(n.IsRead ? "500" : "600");color:@(n.IsRead ? "var(--text-2)" : "var(--text)");">
+                            @n.Title
+                        </span>
+                        <span style="font-size:.75rem;color:var(--label);white-space:nowrap;flex-shrink:0;">
+                            @n.CreatedAt.ToLocalTime().ToString("MMM d, h:mm tt")
+                        </span>
+                    </div>
+                    <p style="font-size:.8125rem;color:var(--muted);margin:0 0 .5rem;">@n.Message</p>
+                    @if (!string.IsNullOrEmpty(n.Link))
+                    {
+                        <a href="@n.Link" class="cst-btn cst-btn-outline cst-btn-sm">View &rarr;</a>
+                    }
+                </div>
+
+            </div>
+        }
+        @* Remove bottom border on last item *@
+        <style>.cst-card > div:last-child { border-bottom: none; }</style>
+    </div>
+}

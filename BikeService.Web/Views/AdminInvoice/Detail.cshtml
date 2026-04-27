@@ -1,0 +1,155 @@
+@using BikeService.Application.DTOs.Invoice
+@using BikeService.Domain.Enums
+@model InvoiceDto
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = $"Invoice #{Model.Id}";
+
+    string GetInvoiceStatusColor(InvoiceStatus s) => s switch
+    {
+        InvoiceStatus.Draft => "secondary",
+        InvoiceStatus.Issued => "primary",
+        InvoiceStatus.Paid => "success",
+        InvoiceStatus.Void => "danger",
+        _ => "secondary"
+    };
+
+    string GetTxStatusColor(string s) => s?.ToLower() switch
+    {
+        "success" => "success",
+        "failed" => "danger",
+        "refunded" => "warning",
+        _ => "secondary"
+    };
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    <h4 class="mb-0 fw-semibold">Invoice #@Model.Id</h4>
+    <span class="badge bg-@GetInvoiceStatusColor(Model.Status) fs-6">@Model.StatusLabel</span>
+</div>
+
+<div class="row g-4">
+    <!-- Invoice Details -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Invoice Details</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Service Ticket</dt>
+                    <dd class="col-sm-8">
+                        <a href="@Url.Action("Detail", "AdminTicket", new { id = Model.ServiceTicketId })">#@Model.ServiceTicketId</a>
+                    </dd>
+                    <dt class="col-sm-4 text-muted">Bike</dt>
+                    <dd class="col-sm-8">@Model.BikeSummary</dd>
+                    @if (!string.IsNullOrEmpty(Model.PromoCode))
+                    {
+                        <dt class="col-sm-4 text-muted">Promo Code</dt>
+                        <dd class="col-sm-8"><code>@Model.PromoCode</code></dd>
+                    }
+                    <dt class="col-sm-4 text-muted">Created</dt>
+                    <dd class="col-sm-8">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Amounts Breakdown -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Amount Breakdown</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between border-bottom py-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span>$@Model.TotalAmount.ToString("0.00")</span>
+                </div>
+                <div class="d-flex justify-content-between border-bottom py-2">
+                    <span class="text-muted">Tax</span>
+                    <span>$@Model.TaxAmount.ToString("0.00")</span>
+                </div>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <div class="d-flex justify-content-between border-bottom py-2 text-success">
+                        <span>Discount</span>
+                        <span>- $@Model.DiscountAmount.ToString("0.00")</span>
+                    </div>
+                }
+                <div class="d-flex justify-content-between pt-2">
+                    <span class="fw-bold fs-5">Total Due</span>
+                    <span class="fw-bold fs-5 text-primary">$@Model.FinalAmount.ToString("0.00")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Transactions -->
+        @if (Model.PaymentTransactions?.Any() == true)
+        {
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-semibold">Payment Transactions</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Gateway</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Reference</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tx in Model.PaymentTransactions)
+                                {
+                                    <tr>
+                                        <td class="text-muted small">#@tx.Id</td>
+                                        <td>@tx.GatewayName</td>
+                                        <td class="fw-medium">$@tx.Amount.ToString("0.00")</td>
+                                        <td><span class="badge bg-@GetTxStatusColor(tx.StatusLabel)">@tx.StatusLabel</span></td>
+                                        <td class="text-muted small font-monospace">@(tx.SessionRef ?? "—")</td>
+                                        <td class="text-muted small">@tx.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Actions -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Actions</div>
+            <div class="card-body d-grid gap-2">
+                @if (Model.Status == InvoiceStatus.Draft)
+                {
+                    <form method="post" asp-action="Issue" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary w-100">Issue Invoice</button>
+                    </form>
+                }
+                @if (Model.Status == InvoiceStatus.Draft || Model.Status == InvoiceStatus.Issued)
+                {
+                    <form method="post" asp-action="Void" asp-route-id="@Model.Id"
+                          onsubmit="return confirm('Void this invoice? This cannot be undone.')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger w-100">Void Invoice</button>
+                    </form>
+                }
+                @if (Model.Status == InvoiceStatus.Paid)
+                {
+                    <div class="alert alert-success mb-0 text-center small">Invoice is paid.</div>
+                }
+                @if (Model.Status == InvoiceStatus.Void)
+                {
+                    <div class="alert alert-secondary mb-0 text-center small">Invoice has been voided.</div>
+                }
+                <a asp-action="Download" asp-route-id="@Model.Id"
+                   class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

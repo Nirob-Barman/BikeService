@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Payment";
+    var success = (bool)(ViewBag.Success ?? false);
+    var message = (string)(ViewBag.Message ?? "");
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            @if (success)
+            {
+                <div style="font-size:4rem;" class="mb-3">&#10003;</div>
+                <h3 class="fw-bold text-success mb-2">Payment Successful!</h3>
+                <p class="text-muted">@message</p>
+                <div class="d-flex gap-2 justify-content-center mt-4">
+                    <a asp-controller="Invoice" asp-action="Index" class="btn btn-primary">My Invoices</a>
+                    <a asp-controller="ServiceTicket" asp-action="Index" class="btn btn-outline-secondary">My Tickets</a>
+                </div>
+            }
+            else
+            {
+                <div style="font-size:4rem;" class="mb-3">&#10007;</div>
+                <h3 class="fw-bold text-danger mb-2">Payment Failed</h3>
+                <p class="text-muted">@message</p>
+                <div class="mt-4">
+                    <a asp-controller="Invoice" asp-action="Index" class="btn btn-outline-primary">Back to Invoices</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

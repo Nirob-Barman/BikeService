@@ -1,0 +1,102 @@
+@model BikeService.Web.ViewModels.Payroll.PayrollRecordFormViewModel
+@using BikeService.Application.DTOs.Payroll
+@{
+    ViewData["Title"] = "Edit Payroll Record";
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    var record = ViewBag.Record as PayrollRecordDto;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">Edit Payroll Record</h4>
+        @if (record != null)
+        {
+            <small class="text-muted">@record.MechanicName — @record.PeriodLabel</small>
+        }
+    </div>
+    <a asp-action="Detail" asp-route-id="@(record?.Id)" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Edit" asp-route-id="@(record?.Id)" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Mechanic (read-only on edit) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mechanic</label>
+                        <input type="text" class="form-control" value="@record?.MechanicName" readonly />
+                        <input type="hidden" asp-for="MechanicId" />
+                    </div>
+
+                    <!-- Period (read-only on edit) -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Period</label>
+                        <input type="text" class="form-control" value="@record?.PeriodLabel" readonly />
+                        <input type="hidden" asp-for="Month" />
+                        <input type="hidden" asp-for="Year" />
+                    </div>
+
+                    <!-- Amounts -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="BaseSalary" class="form-label fw-semibold">Base Salary (৳)</label>
+                            <input asp-for="BaseSalary" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="BaseSalary" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Bonus" class="form-label fw-semibold">Bonus (৳)</label>
+                            <input asp-for="Bonus" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="Bonus" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Deductions" class="form-label fw-semibold">Deductions (৳)</label>
+                            <input asp-for="Deductions" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="Deductions" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Net pay preview -->
+                    <div class="alert alert-info py-2 mb-3">
+                        Net Pay: <strong id="netPay">৳0.00</strong>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"
+                                  placeholder="Any additional remarks..."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-1"></i> Save Changes
+                        </button>
+                        <a asp-action="Detail" asp-route-id="@(record?.Id)" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+    function calcNet() {
+        const base = parseFloat(document.getElementById('BaseSalary').value) || 0;
+        const bon  = parseFloat(document.getElementById('Bonus').value)      || 0;
+        const ded  = parseFloat(document.getElementById('Deductions').value) || 0;
+        document.getElementById('netPay').textContent = '৳' + (base + bon - ded).toFixed(2);
+    }
+    calcNet();
+</script>
+}

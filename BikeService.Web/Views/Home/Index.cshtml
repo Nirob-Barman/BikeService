@@ -1,0 +1,1256 @@
+@model BikeService.Web.ViewModels.Home.HomeViewModel
+@{
+    ViewData["Title"] = "BikeService — Professional Bike Repair";
+    Layout = "~/Views/Shared/_HomeLayout.cshtml";
+}
+
+@section Styles {
+<style>
+/* ── Design tokens ── */
+:root {
+    --p:       #5B4FE9;
+    --p-dark:  #4338CA;
+    --p-light: #EEF2FF;
+    --text:    #0F172A;
+    --muted:   #64748B;
+    --border:  #E2E8F0;
+    --bg-soft: #F8FAFC;
+    --font:    'Inter', system-ui, -apple-system, sans-serif;
+    --t:       200ms ease;
+    --nav-h:   64px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Scroll animation ── */
+[data-anim] {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity .65s ease, transform .65s ease;
+}
+[data-anim].visible {
+    opacity: 1;
+    transform: none;
+}
+[data-anim-delay="1"] { transition-delay: .1s; }
+[data-anim-delay="2"] { transition-delay: .2s; }
+[data-anim-delay="3"] { transition-delay: .3s; }
+[data-anim-delay="4"] { transition-delay: .4s; }
+
+/* ── Container ── */
+.lp-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ */
+.hero {
+    position: relative;
+    background: #05071A;
+    min-height: calc(100vh - var(--nav-h));
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 5rem 0 4rem;
+}
+
+/* Dot grid overlay */
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+}
+
+/* Glow orbs */
+.hero-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(1px);
+}
+.hero-orb-1 {
+    width: 560px; height: 560px;
+    top: -180px; left: -140px;
+    background: radial-gradient(circle, rgba(91,79,233,.38) 0%, transparent 68%);
+}
+.hero-orb-2 {
+    width: 480px; height: 480px;
+    bottom: -120px; right: 8%;
+    background: radial-gradient(circle, rgba(124,58,237,.28) 0%, transparent 68%);
+}
+.hero-orb-3 {
+    width: 300px; height: 300px;
+    top: 40%; right: 28%;
+    background: radial-gradient(circle, rgba(56,189,248,.12) 0%, transparent 68%);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: rgba(91,79,233,.18);
+    border: 1px solid rgba(91,79,233,.35);
+    border-radius: 100px;
+    padding: .35rem .9rem;
+    font-size: .8rem;
+    font-weight: 600;
+    color: #A5B4FC;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+}
+.hero-badge-dot {
+    width: 6px; height: 6px;
+    background: #818CF8;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+}
+@@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .5; transform: scale(.75); }
+}
+
+.hero-h1 {
+    font-size: clamp(2.5rem, 6vw, 4.25rem);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: -.04em;
+    margin-bottom: 1.5rem;
+}
+.hero-h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, #818CF8 0%, #C084FC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.hero-sub {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: rgba(255,255,255,.6);
+    line-height: 1.7;
+    max-width: 500px;
+    margin-bottom: 2.5rem;
+}
+.hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.btn-hero-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .8rem 1.75rem;
+    background: var(--p);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: .9375rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    transition: background var(--t), box-shadow var(--t), transform var(--t);
+}
+.btn-hero-primary:hover {
+    background: var(--p-dark);
+    box-shadow: 0 8px 24px rgba(91,79,233,.45);
+    transform: translateY(-2px);
+    color: #fff;
+}
+.btn-hero-primary:active { transform: translateY(0); }
+.btn-hero-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .8rem 1.5rem;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.85);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: .9375rem;
+    font-weight: 500;
+    transition: background var(--t), border-color var(--t), color var(--t);
+}
+.btn-hero-ghost:hover {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.3);
+    color: #fff;
+}
+
+/* Hero right visual */
+.hero-visual {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.hero-visual-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(8px);
+    width: 100%;
+    max-width: 360px;
+}
+.hero-stat-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.hero-stat-box {
+    flex: 1;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 12px;
+    padding: .875rem;
+    text-align: center;
+}
+.hero-stat-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.03em;
+    line-height: 1;
+    margin-bottom: .2rem;
+}
+.hero-stat-lbl {
+    font-size: .72rem;
+    color: rgba(255,255,255,.5);
+    font-weight: 500;
+}
+.hero-status-list { display: flex; flex-direction: column; gap: .625rem; }
+.hero-status-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,.05);
+    border-radius: 8px;
+    padding: .625rem .875rem;
+}
+.hero-status-label { font-size: .8rem; color: rgba(255,255,255,.7); font-weight: 500; }
+.hero-status-badge {
+    font-size: .7rem;
+    font-weight: 600;
+    padding: .2rem .55rem;
+    border-radius: 20px;
+}
+.badge-green  { background: rgba(34,197,94,.18);  color: #4ADE80; }
+.badge-amber  { background: rgba(251,191,36,.18);  color: #FCD34D; }
+.badge-blue   { background: rgba(99,179,237,.18);  color: #93C5FD; }
+
+/* ══════════════════════════════════════════
+   STATS
+══════════════════════════════════════════ */
+.stats-section {
+    background: #fff;
+    padding: 4rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+@@media (min-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.stat-item { text-align: center; }
+.stat-number {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -.045em;
+    line-height: 1;
+    margin-bottom: .375rem;
+}
+.stat-label {
+    font-size: .875rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════════
+   PROMO BANNER
+══════════════════════════════════════════ */
+.promo-strip {
+    background: linear-gradient(90deg, #4338CA 0%, #5B4FE9 50%, #7C3AED 100%);
+    padding: .875rem 0;
+    overflow: hidden;
+}
+.promo-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.promo-content {
+    display: flex;
+    align-items: center;
+    gap: .875rem;
+    flex: 1;
+}
+.promo-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+.promo-text {
+    font-size: .9rem;
+    color: rgba(255,255,255,.9);
+    font-weight: 500;
+}
+.promo-code {
+    font-weight: 800;
+    color: #fff;
+    background: rgba(255,255,255,.18);
+    padding: .15rem .5rem;
+    border-radius: 5px;
+    letter-spacing: .05em;
+    font-size: .875rem;
+}
+.btn-promo {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .45rem 1rem;
+    background: #fff;
+    color: var(--p-dark);
+    text-decoration: none;
+    border-radius: 7px;
+    font-size: .8375rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: box-shadow var(--t), transform var(--t);
+    flex-shrink: 0;
+}
+.btn-promo:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+    transform: translateY(-1px);
+    color: var(--p-dark);
+}
+
+/* ══════════════════════════════════════════
+   SECTION HEADER
+══════════════════════════════════════════ */
+.section-header {
+    text-align: center;
+    margin-bottom: 3.5rem;
+}
+.section-label {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--p);
+    margin-bottom: .75rem;
+}
+.section-title {
+    font-size: clamp(1.65rem, 3vw, 2.25rem);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -.04em;
+    line-height: 1.2;
+    margin-bottom: .75rem;
+}
+.section-sub {
+    color: var(--muted);
+    font-size: .9375rem;
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.65;
+}
+
+/* ══════════════════════════════════════════
+   SERVICES
+══════════════════════════════════════════ */
+.services-section {
+    background: var(--bg-soft);
+    padding: 6rem 0;
+}
+.services-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+@@media (min-width: 640px)  { .services-grid { grid-template-columns: repeat(2, 1fr); } }
+@@media (min-width: 1024px) { .services-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.service-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow var(--t), transform var(--t), border-color var(--t);
+}
+.service-card:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,.08);
+    transform: translateY(-3px);
+    border-color: #CBD5E1;
+}
+.service-icon {
+    width: 44px; height: 44px;
+    background: var(--p-light);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+.service-name {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    margin-bottom: .5rem;
+}
+.service-desc {
+    font-size: .875rem;
+    color: var(--muted);
+    line-height: 1.6;
+    flex: 1;
+    margin-bottom: 1.25rem;
+}
+.service-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 1rem;
+}
+.service-price {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--p);
+    letter-spacing: -.02em;
+}
+.service-est {
+    font-size: .78rem;
+    color: var(--muted);
+    margin-top: .1rem;
+}
+.btn-book {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .4rem .875rem;
+    background: var(--p-light);
+    color: var(--p);
+    text-decoration: none;
+    border-radius: 7px;
+    font-size: .8375rem;
+    font-weight: 600;
+    transition: background var(--t), color var(--t);
+}
+.btn-book:hover { background: var(--p); color: #fff; }
+
+/* ══════════════════════════════════════════
+   HOW IT WORKS
+══════════════════════════════════════════ */
+.hiw-section {
+    background: #fff;
+    padding: 6rem 0;
+}
+.hiw-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    position: relative;
+}
+@@media (min-width: 768px) {
+    .hiw-grid { grid-template-columns: repeat(3, 1fr); }
+    .hiw-grid::before {
+        content: '';
+        position: absolute;
+        top: 28px;
+        left: calc(16.67% + 28px);
+        right: calc(16.67% + 28px);
+        height: 1px;
+        background: linear-gradient(90deg, var(--border) 0%, var(--p) 50%, var(--border) 100%);
+    }
+}
+.hiw-step { text-align: center; }
+.hiw-num {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--p) 0%, #7C3AED 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 auto 1.25rem;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 16px rgba(91,79,233,.35);
+}
+.hiw-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.025em;
+    margin-bottom: .5rem;
+}
+.hiw-text {
+    font-size: .875rem;
+    color: var(--muted);
+    line-height: 1.65;
+    max-width: 240px;
+    margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════
+   WHY CHOOSE US
+══════════════════════════════════════════ */
+.why-section {
+    background: var(--bg-soft);
+    padding: 6rem 0;
+}
+.why-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+@@media (min-width: 768px) { .why-grid { grid-template-columns: repeat(4, 1fr); } }
+.why-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    transition: box-shadow var(--t), transform var(--t);
+}
+.why-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,.07);
+    transform: translateY(-2px);
+}
+.why-icon {
+    font-size: 1.75rem;
+    margin-bottom: .875rem;
+    display: block;
+}
+.why-title {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    margin-bottom: .4rem;
+}
+.why-text {
+    font-size: .84rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════
+   MECHANICS
+══════════════════════════════════════════ */
+.mechanics-section {
+    background: #fff;
+    padding: 6rem 0;
+}
+.mechanics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+@@media (min-width: 640px)  { .mechanics-grid { grid-template-columns: repeat(2, 1fr); } }
+@@media (min-width: 1024px) { .mechanics-grid { grid-template-columns: repeat(4, 1fr); } }
+.mechanic-card {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: box-shadow var(--t), transform var(--t);
+}
+.mechanic-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    transform: translateY(-2px);
+}
+.mechanic-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--p) 0%, #7C3AED 100%);
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto .875rem;
+}
+.mechanic-name {
+    font-size: .9375rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -.02em;
+    margin-bottom: .25rem;
+}
+.mechanic-spec {
+    font-size: .8rem;
+    color: var(--muted);
+    margin-bottom: .75rem;
+}
+.badge-avail {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: .2rem .6rem;
+    border-radius: 20px;
+}
+.badge-avail.yes { background: #DCFCE7; color: #16A34A; }
+.badge-avail.no  { background: #F1F5F9; color: #94A3B8; }
+
+/* ══════════════════════════════════════════
+   REVIEWS
+══════════════════════════════════════════ */
+.reviews-section {
+    background: var(--bg-soft);
+    padding: 6rem 0;
+}
+.reviews-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+@@media (min-width: 640px)  { .reviews-grid { grid-template-columns: repeat(2, 1fr); } }
+@@media (min-width: 1024px) { .reviews-grid { grid-template-columns: repeat(3, 1fr); } }
+.review-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow var(--t);
+}
+.review-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.07); }
+.review-stars { margin-bottom: .875rem; display: flex; gap: .15rem; }
+.star { font-size: 1rem; }
+.star.on  { color: #FBBF24; }
+.star.off { color: #E2E8F0; }
+.review-quote {
+    font-size: .9rem;
+    color: var(--muted);
+    line-height: 1.7;
+    flex: 1;
+    margin-bottom: 1.25rem;
+    font-style: italic;
+}
+.review-author {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    border-top: 1px solid #F8FAFC;
+    padding-top: 1rem;
+}
+.review-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--p-light);
+    color: var(--p);
+    font-size: .85rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.review-author-name {
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--text);
+}
+.review-author-bike {
+    font-size: .775rem;
+    color: var(--muted);
+}
+
+/* ══════════════════════════════════════════
+   CTA
+══════════════════════════════════════════ */
+.cta-section {
+    background: #05071A;
+    padding: 7rem 0;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+.cta-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+}
+.cta-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+.cta-orb-1 {
+    width: 500px; height: 500px;
+    top: -200px; left: -100px;
+    background: radial-gradient(circle, rgba(91,79,233,.3) 0%, transparent 68%);
+}
+.cta-orb-2 {
+    width: 400px; height: 400px;
+    bottom: -150px; right: 5%;
+    background: radial-gradient(circle, rgba(124,58,237,.22) 0%, transparent 68%);
+}
+.cta-content { position: relative; z-index: 2; }
+.cta-title {
+    font-size: clamp(1.875rem, 4vw, 3rem);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.045em;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+}
+.cta-sub {
+    font-size: 1.0625rem;
+    color: rgba(255,255,255,.55);
+    margin-bottom: 2.5rem;
+    max-width: 460px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.65;
+}
+.cta-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.btn-cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .875rem 2rem;
+    background: var(--p);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: .9375rem;
+    font-weight: 600;
+    transition: background var(--t), box-shadow var(--t), transform var(--t);
+}
+.btn-cta-primary:hover {
+    background: var(--p-dark);
+    box-shadow: 0 8px 24px rgba(91,79,233,.45);
+    transform: translateY(-2px);
+    color: #fff;
+}
+.btn-cta-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .875rem 1.75rem;
+    border: 1.5px solid rgba(255,255,255,.2);
+    color: rgba(255,255,255,.8);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: .9375rem;
+    font-weight: 500;
+    transition: border-color var(--t), color var(--t), background var(--t);
+}
+.btn-cta-ghost:hover {
+    border-color: rgba(255,255,255,.45);
+    color: #fff;
+    background: rgba(255,255,255,.07);
+}
+</style>
+}
+
+@* ════════════════════════════════════════════
+   HERO
+════════════════════════════════════════════ *@
+<section class="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+    <div class="lp-container" style="width:100%;">
+        <div style="display:grid;grid-template-columns:1fr;gap:3rem;align-items:center;"
+             class="hero-layout">
+            <div class="hero-content" data-anim>
+                <div class="hero-badge">
+                    <span class="hero-badge-dot"></span>
+                    Professional Bike Service Platform
+                </div>
+                <h1 class="hero-h1">
+                    Your bike deserves<br/>
+                    <em>expert care.</em>
+                </h1>
+                <p class="hero-sub">
+                    Book service appointments online, track every repair step in real time,
+                    and pay invoices securely — all from one place.
+                </p>
+                <div class="hero-actions">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <a asp-controller="Appointment" asp-action="Create" class="btn-hero-primary">
+                            Book a Service
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Register" class="btn-hero-primary">
+                            Get Started Free
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    }
+                    <a href="#services" class="btn-hero-ghost">
+                        Explore Services
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-visual d-none d-lg-flex" data-anim data-anim-delay="2">
+                <div class="hero-visual-card">
+                    <div class="hero-stat-row">
+                        <div class="hero-stat-box">
+                            <div class="hero-stat-num">@Model.CompletedTickets<span style="font-size:1rem;">+</span></div>
+                            <div class="hero-stat-lbl">Tickets Done</div>
+                        </div>
+                        <div class="hero-stat-box">
+                            <div class="hero-stat-num">@Model.TotalCustomers<span style="font-size:1rem;">+</span></div>
+                            <div class="hero-stat-lbl">Customers</div>
+                        </div>
+                    </div>
+                    <div class="hero-status-list">
+                        <div class="hero-status-item">
+                            <span class="hero-status-label">Tire Replacement</span>
+                            <span class="hero-status-badge badge-green">Ready</span>
+                        </div>
+                        <div class="hero-status-item">
+                            <span class="hero-status-label">Full Tune-Up</span>
+                            <span class="hero-status-badge badge-amber">In Progress</span>
+                        </div>
+                        <div class="hero-status-item">
+                            <span class="hero-status-label">Chain Service</span>
+                            <span class="hero-status-badge badge-blue">Diagnosed</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+@@media (min-width: 1024px) {
+    .hero-layout { grid-template-columns: 1fr 400px !important; }
+}
+</style>
+
+@* ════════════════════════════════════════════
+   STATS
+════════════════════════════════════════════ *@
+<section class="stats-section">
+    <div class="lp-container">
+        <div class="stats-grid">
+            <div class="stat-item" data-anim data-anim-delay="1">
+                <div class="stat-number" data-count="@Model.CompletedTickets" data-suffix="+">0+</div>
+                <div class="stat-label">Tickets Completed</div>
+            </div>
+            <div class="stat-item" data-anim data-anim-delay="2">
+                <div class="stat-number" data-count="@Model.TotalBikesServiced" data-suffix="+">0+</div>
+                <div class="stat-label">Bikes Serviced</div>
+            </div>
+            <div class="stat-item" data-anim data-anim-delay="3">
+                <div class="stat-number" data-count="@Model.TotalCustomers" data-suffix="+">0+</div>
+                <div class="stat-label">Happy Customers</div>
+            </div>
+            <div class="stat-item" data-anim data-anim-delay="4">
+                <div class="stat-number" data-count="5" data-suffix="+ yrs">0+</div>
+                <div class="stat-label">Years in Business</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ════════════════════════════════════════════
+   PROMO STRIP
+════════════════════════════════════════════ *@
+@if (Model.PromoCodes.Any())
+{
+    <div class="promo-strip">
+        <div class="lp-container">
+            <div class="promo-inner">
+                <div class="promo-content">
+                    <span class="promo-icon">🏷️</span>
+                    <div class="promo-text">
+                        Use code <span class="promo-code" id="promoCode">@Model.PromoCodes[0].Code</span>
+                        — Save <span id="promoDiscount">@Model.PromoCodes[0].DiscountPercent</span>% on your next service
+                        @if (Model.PromoCodes[0].ExpiresAt.HasValue)
+                        {
+                            <span style="opacity:.7;font-size:.82rem;margin-left:.5rem;">
+                                · Expires @Model.PromoCodes[0].ExpiresAt!.Value.ToString("MMM d")
+                            </span>
+                        }
+                    </div>
+                </div>
+                @if (Model.PromoCodes.Count > 1)
+                {
+                    <a asp-controller="Offer" asp-action="Index" class="btn-promo">
+                        View All Offers
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* ════════════════════════════════════════════
+   SERVICES
+════════════════════════════════════════════ *@
+<section class="services-section" id="services">
+    <div class="lp-container">
+        <div class="section-header" data-anim>
+            <span class="section-label">Services</span>
+            <h2 class="section-title">Quality care for every bike</h2>
+            <p class="section-sub">From routine tune-ups to complex overhauls — our certified mechanics handle it all.</p>
+        </div>
+
+        @if (Model.ServiceTypes.Any())
+        {
+            <div class="services-grid">
+                @{
+                    var icons = new[] { "🔧", "🔩", "⚙️", "🛞", "⛓️", "🔋", "🛠️", "🔦" };
+                    var si = 0;
+                }
+                @foreach (var svc in Model.ServiceTypes)
+                {
+                    <div class="service-card" data-anim>
+                        <div class="service-icon">@icons[si % icons.Length]</div>
+                        <div class="service-name">@svc.Name</div>
+                        @if (!string.IsNullOrWhiteSpace(svc.Description))
+                        {
+                            <p class="service-desc">@svc.Description</p>
+                        }
+                        else
+                        {
+                            <p class="service-desc">Professional service by our certified mechanics with genuine parts.</p>
+                        }
+                        <div class="service-footer">
+                            <div>
+                                <div class="service-price">৳@svc.BasePrice.ToString("N0")</div>
+                                <div class="service-est">~@svc.EstimatedHours hrs</div>
+                            </div>
+                            <a asp-controller="Appointment" asp-action="Create" class="btn-book">
+                                Book Now
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    si++;
+                }
+            </div>
+        }
+        else
+        {
+            <p style="text-align:center;color:var(--muted);padding:3rem 0;">No services available at the moment.</p>
+        }
+    </div>
+</section>
+
+@* ════════════════════════════════════════════
+   HOW IT WORKS
+════════════════════════════════════════════ *@
+<section class="hiw-section">
+    <div class="lp-container">
+        <div class="section-header" data-anim>
+            <span class="section-label">Process</span>
+            <h2 class="section-title">Up and running in 3 steps</h2>
+            <p class="section-sub">No phone calls, no waiting. Get your bike serviced the modern way.</p>
+        </div>
+        <div class="hiw-grid">
+            <div class="hiw-step" data-anim data-anim-delay="1">
+                <div class="hiw-num">01</div>
+                <h3 class="hiw-title">Book Online</h3>
+                <p class="hiw-text">Select your service type, pick a date that works for you, and confirm your appointment in minutes.</p>
+            </div>
+            <div class="hiw-step" data-anim data-anim-delay="2">
+                <div class="hiw-num">02</div>
+                <h3 class="hiw-title">Drop Off Your Bike</h3>
+                <p class="hiw-text">Bring your bike on the scheduled day. Our mechanic diagnoses and gets to work right away.</p>
+            </div>
+            <div class="hiw-step" data-anim data-anim-delay="3">
+                <div class="hiw-num">03</div>
+                <h3 class="hiw-title">Pick Up &amp; Pay</h3>
+                <p class="hiw-text">We notify you when it's ready. Pay online securely and collect your fully serviced bike.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ════════════════════════════════════════════
+   WHY CHOOSE US
+════════════════════════════════════════════ *@
+<section class="why-section">
+    <div class="lp-container">
+        <div class="section-header" data-anim>
+            <span class="section-label">Why Us</span>
+            <h2 class="section-title">Built for riders who care</h2>
+            <p class="section-sub">Everything you need from a modern bike service — nothing you don't.</p>
+        </div>
+        <div class="why-grid">
+            <div class="why-card" data-anim data-anim-delay="1">
+                <span class="why-icon">🛡️</span>
+                <div class="why-title">Certified Mechanics</div>
+                <p class="why-text">Factory-trained staff with years of hands-on experience on all bike types.</p>
+            </div>
+            <div class="why-card" data-anim data-anim-delay="2">
+                <span class="why-icon">⚡</span>
+                <div class="why-title">Fast Turnaround</div>
+                <p class="why-text">Most services completed same day or within 24 hours — no unnecessary delays.</p>
+            </div>
+            <div class="why-card" data-anim data-anim-delay="3">
+                <span class="why-icon">🔩</span>
+                <div class="why-title">Genuine Parts</div>
+                <p class="why-text">We use only OEM and certified aftermarket components. No shortcuts.</p>
+            </div>
+            <div class="why-card" data-anim data-anim-delay="4">
+                <span class="why-icon">📍</span>
+                <div class="why-title">Real-Time Tracking</div>
+                <p class="why-text">Watch your ticket status update live from your personal dashboard.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ════════════════════════════════════════════
+   MECHANICS
+════════════════════════════════════════════ *@
+@if (Model.Mechanics.Any())
+{
+    <section class="mechanics-section">
+        <div class="lp-container">
+            <div class="section-header" data-anim>
+                <span class="section-label">The Team</span>
+                <h2 class="section-title">Meet our mechanics</h2>
+                <p class="section-sub">Skilled professionals who keep your bike running at its best.</p>
+            </div>
+            <div class="mechanics-grid">
+                @foreach (var m in Model.Mechanics)
+                {
+                    <div class="mechanic-card" data-anim>
+                        <div class="mechanic-avatar">@m.FullName.Substring(0, 1).ToUpper()</div>
+                        <div class="mechanic-name">@m.FullName</div>
+                        @if (!string.IsNullOrWhiteSpace(m.Specialty))
+                        {
+                            <div class="mechanic-spec">@m.Specialty</div>
+                        }
+                        @if (m.IsAvailable)
+                        {
+                            <span class="badge-avail yes">Available</span>
+                        }
+                        else
+                        {
+                            <span class="badge-avail no">Busy</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ════════════════════════════════════════════
+   REVIEWS
+════════════════════════════════════════════ *@
+<section class="reviews-section">
+    <div class="lp-container">
+        <div class="section-header" data-anim>
+            <span class="section-label">Reviews</span>
+            <h2 class="section-title">What riders are saying</h2>
+            <p class="section-sub">Real feedback from real customers who trust us with their bikes.</p>
+        </div>
+        @if (!Model.Reviews.Any())
+        {
+            <div style="text-align:center;padding:4rem 0;color:var(--muted);">
+                <div style="font-size:3rem;margin-bottom:1rem;">⭐</div>
+                <p style="margin:0;">No reviews yet — be the first to share your experience!</p>
+            </div>
+        }
+        else
+        {
+            <div class="reviews-grid">
+                @foreach (var r in Model.Reviews)
+                {
+                    <div class="review-card" data-anim>
+                        <div class="review-stars">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <span class="star @(i <= r.Rating ? "on" : "off")">★</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(r.Comment))
+                        {
+                            <p class="review-quote">"@r.Comment"</p>
+                        }
+                        else
+                        {
+                            <p class="review-quote">"Great service, highly recommend BikeService to any cyclist!"</p>
+                        }
+                        <div class="review-author">
+                            <div class="review-avatar">@r.CustomerName.Substring(0, 1).ToUpper()</div>
+                            <div>
+                                <div class="review-author-name">@r.CustomerName</div>
+                                @if (!string.IsNullOrWhiteSpace(r.BikeSummary))
+                                {
+                                    <div class="review-author-bike">@r.BikeSummary</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@* ════════════════════════════════════════════
+   CTA
+════════════════════════════════════════════ *@
+<section class="cta-section">
+    <div class="cta-orb cta-orb-1"></div>
+    <div class="cta-orb cta-orb-2"></div>
+    <div class="lp-container">
+        <div class="cta-content" data-anim>
+            <h2 class="cta-title">Ready to get rolling?</h2>
+            <p class="cta-sub">Join hundreds of riders who trust BikeService to keep their bikes in top shape.</p>
+            <div class="cta-actions">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Appointment" asp-action="Create" class="btn-cta-primary">
+                        Book a Service Now
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Register" class="btn-cta-primary">
+                        Create Free Account
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                    <a asp-controller="Account" asp-action="Login" class="btn-cta-ghost">Sign In</a>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+@if (Model.PromoCodes.Count > 1)
+{
+    <script>
+    (function () {
+        var codes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Model.PromoCodes.Select(p => new { code = p.Code, discount = p.DiscountPercent })));
+        var el = document.getElementById('promoCode');
+        var dl = document.getElementById('promoDiscount');
+        if (!el || !dl) return;
+        var idx = 0;
+        setInterval(function () {
+            idx = (idx + 1) % codes.length;
+            el.style.opacity = '0';
+            dl.style.opacity = '0';
+            setTimeout(function () {
+                el.textContent = codes[idx].code;
+                dl.textContent = codes[idx].discount;
+                el.style.opacity = '1';
+                dl.style.opacity = '1';
+            }, 280);
+        }, 4000);
+        el.style.transition = 'opacity .28s ease';
+        dl.style.transition = 'opacity .28s ease';
+    })();
+    </script>
+}
+
+<script>
+/* Intersection Observer — scroll animations */
+(function () {
+    if (!('IntersectionObserver' in window)) {
+        document.querySelectorAll('[data-anim]').forEach(function (el) {
+            el.classList.add('visible');
+        });
+        return;
+    }
+    var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) {
+                e.target.classList.add('visible');
+                obs.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('[data-anim]').forEach(function (el) {
+        obs.observe(el);
+    });
+})();
+
+/* Counter animation */
+(function () {
+    function animCount(el) {
+        var target   = parseInt(el.dataset.count, 10) || 0;
+        var suffix   = el.dataset.suffix || '';
+        var duration = 1600;
+        var start    = null;
+        function step(ts) {
+            if (!start) start = ts;
+            var progress = Math.min((ts - start) / duration, 1);
+            var eased    = 1 - Math.pow(1 - progress, 3); /* ease-out cubic */
+            el.textContent = Math.floor(eased * target) + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    if (!('IntersectionObserver' in window)) return;
+    var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+            if (e.isIntersecting) {
+                animCount(e.target);
+                obs.unobserve(e.target);
+            }
+        });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('[data-count]').forEach(function (el) {
+        obs.observe(el);
+    });
+})();
+</script>
+}

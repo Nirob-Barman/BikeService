@@ -1,0 +1,74 @@
+@model BikeService.Web.ViewModels.Appointment.AppointmentCreateViewModel
+@{
+    ViewData["Title"] = "Book Appointment";
+}
+
+<div style="max-width:540px;">
+
+    <div class="cst-page-head" style="margin-bottom:1.25rem;">
+        <div class="cst-page-head-left">
+            <a asp-action="Index" class="cst-back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                My Appointments
+            </a>
+        </div>
+    </div>
+
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <span class="cst-card-title">Book an Appointment</span>
+        </div>
+        <div class="cst-card-body">
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="cst-alert cst-alert-danger"></div>
+
+                <div class="cst-form-group">
+                    <label asp-for="BikeId" class="cst-label"></label>
+                    <select asp-for="BikeId" class="cst-select">
+                        <option value="">— Select your bike —</option>
+                        @foreach (var bike in Model.Bikes)
+                        {
+                            <option value="@bike.Id">@bike.Make @bike.Model (@bike.Year)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="BikeId" class="cst-field-error"></span>
+                </div>
+
+                <div class="cst-form-group">
+                    <label asp-for="AppointmentDate" class="cst-label"></label>
+                    <input asp-for="AppointmentDate" type="datetime-local" class="cst-input"
+                           min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" />
+                    <span asp-validation-for="AppointmentDate" class="cst-field-error"></span>
+                </div>
+
+                <div class="cst-form-group">
+                    <label asp-for="Notes" class="cst-label">
+                        Notes <span class="opt">(optional)</span>
+                    </label>
+                    <textarea asp-for="Notes" class="cst-textarea"
+                              placeholder="Describe the issue or service needed…"></textarea>
+                    <span asp-validation-for="Notes" class="cst-field-error"></span>
+                </div>
+
+                <button type="submit" class="cst-btn cst-btn-primary cst-btn-block cst-btn-lg">
+                    Confirm Booking
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <p style="font-size:.775rem;color:var(--muted);text-align:center;margin-top:.875rem;">
+        Don't have a bike registered?
+        <a asp-controller="CustomerBike" asp-action="Create"
+           style="color:var(--cp);text-decoration:none;font-weight:500;">Register one here</a>.
+    </p>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

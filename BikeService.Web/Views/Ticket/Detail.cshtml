@@ -1,0 +1,398 @@
+@using BikeService.Application.DTOs.Mechanic
+@using BikeService.Application.DTOs.Part
+@using BikeService.Application.DTOs.ServiceType
+@using BikeService.Application.DTOs.ServiceTicket
+@using BikeService.Domain.Enums
+@using BikeService.Web.ViewModels.ServiceTicket
+@model TicketDetailViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = $"Ticket #{Model.Ticket.Id}";
+    var ticket = Model.Ticket;
+
+    string GetStatusColor(ServiceTicketStatus s) => s switch
+    {
+        ServiceTicketStatus.Pending => "secondary",
+        ServiceTicketStatus.Diagnosed => "info",
+        ServiceTicketStatus.InProgress => "primary",
+        ServiceTicketStatus.QualityCheck => "warning",
+        ServiceTicketStatus.ReadyForPickup => "success",
+        ServiceTicketStatus.Delivered => "dark",
+        ServiceTicketStatus.Cancelled => "danger",
+        _ => "secondary"
+    };
+
+    // Build list of valid next statuses
+    var nextStatuses = new List<ServiceTicketStatus>();
+    if (ticket.Status == ServiceTicketStatus.Pending) nextStatuses.Add(ServiceTicketStatus.Diagnosed);
+    if (ticket.Status == ServiceTicketStatus.Diagnosed) nextStatuses.Add(ServiceTicketStatus.InProgress);
+    if (ticket.Status == ServiceTicketStatus.InProgress) nextStatuses.Add(ServiceTicketStatus.QualityCheck);
+    if (ticket.Status == ServiceTicketStatus.QualityCheck) nextStatuses.Add(ServiceTicketStatus.ReadyForPickup);
+    if (ticket.Status == ServiceTicketStatus.ReadyForPickup) nextStatuses.Add(ServiceTicketStatus.Delivered);
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    <h4 class="mb-0 fw-semibold">Ticket #@ticket.Id</h4>
+    <span class="badge bg-@GetStatusColor(ticket.Status) fs-6">@ticket.StatusLabel</span>
+    @if (ticket.IsOverdue)
+    {
+        <span class="badge bg-danger">Overdue</span>
+    }
+</div>
+
+<div class="row g-4">
+    <!-- Left column -->
+    <div class="col-lg-8">
+
+        <!-- 1. Ticket Info -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Ticket Information</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Bike</dt>
+                    <dd class="col-sm-8">@ticket.BikeSummary</dd>
+                    <dt class="col-sm-4 text-muted">Customer</dt>
+                    <dd class="col-sm-8">@ticket.CustomerName</dd>
+                    <dt class="col-sm-4 text-muted">Mechanic</dt>
+                    <dd class="col-sm-8">@(ticket.MechanicName ?? "—")</dd>
+                    <dt class="col-sm-4 text-muted">Est. Completion</dt>
+                    <dd class="col-sm-8">@(ticket.EstimatedCompletionDate.HasValue ? ticket.EstimatedCompletionDate.Value.ToString("MMM dd, yyyy") : "—")</dd>
+                    <dt class="col-sm-4 text-muted">Created</dt>
+                    <dd class="col-sm-8">@ticket.CreatedAt.ToString("MMM dd, yyyy HH:mm")</dd>
+                    @if (ticket.AppointmentId.HasValue)
+                    {
+                        <dt class="col-sm-4 text-muted">Appointment</dt>
+                        <dd class="col-sm-8">#@ticket.AppointmentId</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <!-- 4. Diagnosis -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Diagnosis Notes</div>
+            <div class="card-body">
+                <form method="post" asp-action="UpdateDiagnosis" asp-route-id="@ticket.Id">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium">Diagnosis Notes</label>
+                        <textarea name="diagnosisNotes" class="form-control" rows="4">@ticket.DiagnosisNotes</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium">Estimated Completion Date</label>
+                        <input type="date" name="estimatedCompletionDate" class="form-control"
+                               value="@ticket.EstimatedCompletionDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Diagnosis</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 5. Items -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Ticket Items</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Qty</th>
+                                <th>Unit Price</th>
+                                <th>Line Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!ticket.Items.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No items added yet.</td>
+                                </tr>
+                            }
+                            @foreach (var item in ticket.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (item.ServiceTypeId.HasValue)
+                                        {
+                                            <span class="badge bg-info text-dark">Service</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">Part</span>
+                                        }
+                                    </td>
+                                    <td>@(item.ServiceTypeName ?? item.PartName ?? "—")</td>
+                                    <td>@item.Quantity</td>
+                                    <td>$@item.UnitPrice.ToString("0.00")</td>
+                                    <td class="fw-medium">$@item.LineTotal.ToString("0.00")</td>
+                                    <td>
+                                        @if (ticket.Status != ServiceTicketStatus.Delivered && ticket.Status != ServiceTicketStatus.Cancelled)
+                                        {
+                                            <form method="post" asp-action="RemoveItem" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="itemId" value="@item.Id" />
+                                                <input type="hidden" name="ticketId" value="@ticket.Id" />
+                                                <button type="button" class="btn btn-sm btn-outline-danger"
+                                                        onclick="confirmDelete('@Url.Action("RemoveItem")', @item.Id, @ticket.Id)">
+                                                    Remove
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        @if (ticket.Items.Any())
+                        {
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-semibold">Total</td>
+                                    <td class="fw-bold">$@ticket.Items.Sum(i => i.LineTotal).ToString("0.00")</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        }
+                    </table>
+                </div>
+
+                @if (ticket.Status != ServiceTicketStatus.Delivered && ticket.Status != ServiceTicketStatus.Cancelled)
+                {
+                    <div class="p-3 border-top">
+                        <h6 class="fw-semibold mb-3">Add Item</h6>
+                        <form method="post" asp-action="AddItem" asp-route-ticketId="@ticket.Id">
+                            @Html.AntiForgeryToken()
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-medium">Item Type</label>
+                                    <select id="itemTypeSelect" class="form-select form-select-sm" onchange="toggleItemDropdown(this.value)">
+                                        <option value="service">Service Type</option>
+                                        <option value="part">Part</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3" id="serviceTypeDiv">
+                                    <label class="form-label small fw-medium">Service Type</label>
+                                    <select name="ServiceTypeId" id="serviceTypeSelect" class="form-select form-select-sm">
+                                        <option value="">— Select —</option>
+                                        @foreach (var st in Model.ActiveServiceTypes)
+                                        {
+                                            <option value="@st.Id" data-price="@st.BasePrice">@st.Name (@st.BasePrice.ToString("C"))</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-none" id="partDiv">
+                                    <label class="form-label small fw-medium">Part</label>
+                                    <select name="PartId" id="partSelect" class="form-select form-select-sm">
+                                        <option value="">— Select —</option>
+                                        @foreach (var p in Model.AllParts)
+                                        {
+                                            <option value="@p.Id" data-price="@p.UnitPrice">@p.Name — @p.SKU ($@p.UnitPrice.ToString("0.00"), stock: @p.StockQuantity)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-medium">Qty</label>
+                                    <input type="number" name="Quantity" class="form-control form-control-sm" min="1" value="1" required />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-medium">Unit Price</label>
+                                    <input type="number" name="UnitPrice" id="unitPriceInput" class="form-control form-control-sm"
+                                           step="0.01" min="0" value="0" required />
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="submit" class="btn btn-success btn-sm w-100">Add</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="col-lg-4">
+
+        <!-- 2. Status Control -->
+        @if (ticket.Status != ServiceTicketStatus.Delivered && ticket.Status != ServiceTicketStatus.Cancelled)
+        {
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white fw-semibold">Update Status</div>
+                <div class="card-body">
+                    <form method="post" asp-action="UpdateStatus" asp-route-id="@ticket.Id">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label small fw-medium">New Status</label>
+                            <select name="newStatus" class="form-select">
+                                @foreach (ServiceTicketStatus s in Enum.GetValues(typeof(ServiceTicketStatus)))
+                                {
+                                    if (s != ServiceTicketStatus.Cancelled)
+                                    {
+                                        <option value="@s" selected="@(s == ticket.Status ? "selected" : null)">@s</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Update Status</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- 3. Mechanic Assignment -->
+        @if (ticket.Status != ServiceTicketStatus.Delivered && ticket.Status != ServiceTicketStatus.Cancelled)
+        {
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white fw-semibold">Assign Mechanic</div>
+                <div class="card-body">
+                    <form method="post" asp-action="AssignMechanic" asp-route-id="@ticket.Id">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label small fw-medium">Mechanic</label>
+                            <select name="mechanicId" class="form-select">
+                                <option value="">— Unassigned —</option>
+                                @foreach (var m in Model.AvailableMechanics)
+                                {
+                                    <option value="@m.Id" selected="@(m.Id == ticket.MechanicId ? "selected" : null)">
+                                        @m.FullName @(m.Specialty != null ? $"({m.Specialty})" : "")
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100">Assign</button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <!-- 6. Invoice -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-semibold">Invoice</div>
+            <div class="card-body">
+                @if (ticket.HasInvoice)
+                {
+                    <a href="@Url.Action("Detail", "AdminInvoice", new { id = ticket.InvoiceId })" class="btn btn-outline-success w-100">
+                        View Invoice
+                    </a>
+                }
+                else if (ticket.Status == ServiceTicketStatus.ReadyForPickup || ticket.Status == ServiceTicketStatus.Delivered)
+                {
+                    <form method="post" asp-action="GenerateInvoice" asp-route-id="@ticket.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success w-100">Generate Invoice</button>
+                    </form>
+                }
+                else
+                {
+                    <p class="text-muted small mb-0">Invoice can be generated when ticket is ReadyForPickup.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Cancel Ticket -->
+        @if (ticket.Status != ServiceTicketStatus.Cancelled && ticket.Status != ServiceTicketStatus.Delivered)
+        {
+            <div class="card shadow-sm border-0 border-danger">
+                <div class="card-header bg-white fw-semibold text-danger">Danger Zone</div>
+                <div class="card-body">
+                    <form method="post" asp-action="Cancel" asp-route-id="@ticket.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="button" class="btn btn-danger w-100"
+                                onclick="confirmCancelTicket('@Url.Action("Cancel", new { id = ticket.Id })')">
+                            Cancel Ticket
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function toggleItemDropdown(type) {
+    const serviceDiv = document.getElementById('serviceTypeDiv');
+    const partDiv = document.getElementById('partDiv');
+    const serviceSelect = document.getElementById('serviceTypeSelect');
+    const partSelect = document.getElementById('partSelect');
+
+    if (type === 'service') {
+        serviceDiv.classList.remove('d-none');
+        partDiv.classList.add('d-none');
+        serviceSelect.name = 'ServiceTypeId';
+        partSelect.name = '_PartId_disabled';
+        autoFillPrice('service');
+    } else {
+        serviceDiv.classList.add('d-none');
+        partDiv.classList.remove('d-none');
+        serviceSelect.name = '_ServiceTypeId_disabled';
+        partSelect.name = 'PartId';
+        autoFillPrice('part');
+    }
+}
+
+function autoFillPrice(type) {
+    const priceInput = document.getElementById('unitPriceInput');
+    if (type === 'service') {
+        const sel = document.getElementById('serviceTypeSelect');
+        const opt = sel.options[sel.selectedIndex];
+        priceInput.value = opt?.dataset?.price || '0';
+    } else {
+        const sel = document.getElementById('partSelect');
+        const opt = sel.options[sel.selectedIndex];
+        priceInput.value = opt?.dataset?.price || '0';
+    }
+}
+
+document.getElementById('serviceTypeSelect')?.addEventListener('change', () => autoFillPrice('service'));
+document.getElementById('partSelect')?.addEventListener('change', () => autoFillPrice('part'));
+
+function confirmDelete(actionUrl, itemId, ticketId) {
+    Swal.fire({
+        title: 'Remove Item?',
+        text: 'This will remove the item from the ticket.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Remove'
+    }).then(r => {
+        if (r.isConfirmed) {
+            var f = document.createElement('form');
+            f.method = 'POST';
+            f.action = actionUrl;
+            var token = document.querySelector('input[name=__RequestVerificationToken]');
+            if (token) { var t = token.cloneNode(true); f.appendChild(t); }
+            var iId = document.createElement('input'); iId.type = 'hidden'; iId.name = 'itemId'; iId.value = itemId; f.appendChild(iId);
+            var tId = document.createElement('input'); tId.type = 'hidden'; tId.name = 'ticketId'; tId.value = ticketId; f.appendChild(tId);
+            document.body.appendChild(f);
+            f.submit();
+        }
+    });
+}
+
+function confirmCancelTicket(url) {
+    Swal.fire({
+        title: 'Cancel Ticket?',
+        text: 'This will cancel the ticket and restock any consumed parts.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, Cancel Ticket'
+    }).then(r => {
+        if (r.isConfirmed) {
+            var f = document.createElement('form');
+            f.method = 'POST';
+            f.action = url;
+            var t = document.createElement('input'); t.type = 'hidden'; t.name = '__RequestVerificationToken';
+            t.value = document.querySelector('input[name=__RequestVerificationToken]')?.value || '';
+            f.appendChild(t);
+            document.body.appendChild(f);
+            f.submit();
+        }
+    });
+}
+</script>
+}

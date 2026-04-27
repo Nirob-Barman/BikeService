@@ -1,0 +1,74 @@
+@model BikeService.Web.ViewModels.CustomerBike.CustomerBikeFormViewModel
+@{
+    ViewData["Title"] = "Edit Bike";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var bikeId = ViewBag.BikeId as int? ?? 0;
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-6 col-md-8">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+            <h4 class="mb-0 fw-semibold">Edit Bike</h4>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" asp-action="Edit" asp-route-id="@bikeId" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" asp-for="ExistingImageUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label asp-for="Make" class="form-label fw-medium"></label>
+                            <input asp-for="Make" class="form-control" autofocus />
+                            <span asp-validation-for="Make" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Model" class="form-label fw-medium"></label>
+                            <input asp-for="Model" class="form-control" />
+                            <span asp-validation-for="Model" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label asp-for="Year" class="form-label fw-medium"></label>
+                            <input asp-for="Year" type="number" class="form-control" />
+                            <span asp-validation-for="Year" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="RegistrationNo" class="form-label fw-medium"></label>
+                            <input asp-for="RegistrationNo" class="form-control" />
+                            <span asp-validation-for="RegistrationNo" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        @if (!string.IsNullOrWhiteSpace(Model.ExistingImageUrl))
+                        {
+                            <div class="mb-2">
+                                <img src="@Model.ExistingImageUrl" alt="Current photo"
+                                     class="rounded" style="height:100px;object-fit:cover;" />
+                                <div class="text-muted small mt-1">Current photo</div>
+                            </div>
+                        }
+                        <label asp-for="Image" class="form-label fw-medium">New Photo (leave blank to keep current)</label>
+                        <input asp-for="Image" type="file" class="form-control" accept="image/*" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,127 @@
+@model BikeService.Web.Models.ErrorViewModel
+@{
+    ViewData["Title"] = Model.StatusCode.HasValue ? $"{Model.StatusCode} — Error" : "Error";
+
+    var is404 = Model.StatusCode == 404;
+    var is403 = Model.StatusCode == 403;
+    var code  = Model.StatusCode?.ToString() ?? "Oops";
+
+    // Icon path & colours per status
+    var (iconColor, bgColor) = is404 ? ("#6c757d", "#f8f9fa")
+                             : is403 ? ("#dc3545", "#fff5f5")
+                                     : ("#dc3545", "#fff5f5");
+}
+
+<div class="min-vh-100 d-flex align-items-center justify-content-center py-5"
+     style="background:#f8f9fa;">
+    <div class="text-center px-3" style="max-width:520px;">
+
+        @* Big status code *@
+        <div class="fw-black mb-2 lh-1 user-select-none"
+             style="font-size:clamp(6rem,20vw,9rem);
+                    color:@iconColor;
+                    opacity:.15;
+                    letter-spacing:-.04em;">
+            @code
+        </div>
+
+        @* Icon *@
+        <div class="mb-4" style="margin-top:-3rem;">
+            @if (is404)
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"
+                     fill="@iconColor" viewBox="0 0 16 16" class="opacity-75">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                    <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                </svg>
+            }
+            else if (is403)
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"
+                     fill="#dc3545" viewBox="0 0 16 16" class="opacity-75">
+                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                </svg>
+            }
+            else
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"
+                     fill="#dc3545" viewBox="0 0 16 16" class="opacity-75">
+                    <path d="M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z"/>
+                    <path d="M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z"/>
+                </svg>
+            }
+        </div>
+
+        @* Message *@
+        <h2 class="fw-bold mb-2">
+            @if (is404) { <text>Page not found</text> }
+            else if (is403) { <text>Access denied</text> }
+            else { <text>Something went wrong</text> }
+        </h2>
+
+        <p class="text-muted mb-4" style="line-height:1.6;">
+            @Model.Message
+        </p>
+
+        @* Actions *@
+        <div class="d-flex flex-wrap gap-2 justify-content-center mb-5">
+            <a onclick="history.back()" href="#"
+               class="btn btn-outline-secondary px-4">
+                &larr; Go Back
+            </a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="AdminAnalytics" asp-action="Index"
+                       class="btn btn-primary px-4">Dashboard</a>
+                }
+                else if (User.IsInRole("Mechanic"))
+                {
+                    <a asp-controller="Mechanic" asp-action="Index"
+                       class="btn btn-primary px-4">My Dashboard</a>
+                }
+                else
+                {
+                    <a asp-controller="Home" asp-action="Index"
+                       class="btn btn-primary px-4">Go to Home</a>
+                }
+            }
+            else
+            {
+                <a asp-controller="Home" asp-action="Index"
+                   class="btn btn-primary px-4">Go to Home</a>
+            }
+        </div>
+
+        @* Helpful links *@
+        <div class="text-muted small">
+            @if (is404)
+            {
+                <p class="mb-2">Looking for something? Try one of these:</p>
+                <div class="d-flex flex-wrap gap-3 justify-content-center">
+                    <a asp-controller="Home" asp-action="Index" class="text-decoration-none">Home</a>
+                    @if (User.Identity?.IsAuthenticated != true)
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="text-decoration-none">Sign In</a>
+                        <a asp-controller="Account" asp-action="Register" class="text-decoration-none">Register</a>
+                    }
+                    <a asp-controller="Offer" asp-action="Index" class="text-decoration-none">Offers</a>
+                </div>
+            }
+            else if (Model.ShowRequestId)
+            {
+                <p class="mb-0">Request ID: <code class="small">@Model.RequestId</code></p>
+            }
+        </div>
+
+    </div>
+</div>
+
+@* Override layout padding *@
+@section Styles {
+    <style>
+        main > .container, main > div { padding: 0 !important; max-width: 100% !important; }
+    </style>
+}

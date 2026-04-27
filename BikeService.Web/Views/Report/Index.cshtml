@@ -1,0 +1,278 @@
+@model BikeService.Web.ViewModels.Report.ReportViewModel
+@{
+    ViewData["Title"] = "Reports & Export";
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Reports &amp; Export</h4>
+</div>
+
+@* Filter Form *@
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form method="post" class="row g-3 align-items-end">
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label fw-medium">From</label>
+                <input type="date" name="dateFrom" class="form-control"
+                       value="@Model.DateFrom.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-medium">To</label>
+                <input type="date" name="dateTo" class="form-control"
+                       value="@Model.DateTo.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+            </div>
+        </form>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger mt-3 mb-0">
+                @Html.ValidationSummary(false)
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.HasData)
+{
+    var df = Model.DateFrom.ToString("yyyy-MM-dd");
+    var dt = Model.DateTo.ToString("yyyy-MM-dd");
+
+    @* ── Revenue ────────────────────────────────────────────── *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h6 class="fw-semibold mb-0">Revenue Report</h6>
+            <a asp-action="ExportInvoices" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
+               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+        </div>
+        <div class="card-body p-4">
+
+            @* KPI cards *@
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Total Revenue</div>
+                        <div class="fw-bold fs-5 text-primary">৳@Model.Revenue!.TotalRevenue.ToString("N2")</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Tax Collected</div>
+                        <div class="fw-bold fs-5">৳@Model.Revenue.TotalTax.ToString("N2")</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Discounts Given</div>
+                        <div class="fw-bold fs-5 text-success">৳@Model.Revenue.TotalDiscount.ToString("N2")</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Paid Invoices</div>
+                        <div class="fw-bold fs-5">@Model.Revenue.InvoiceCount</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                @* By Service *@
+                <div class="col-md-6">
+                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Service Type</h6>
+                    @if (!Model.Revenue.ByService.Any())
+                    {
+                        <p class="text-muted small">No data.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr><th>Service</th><th class="text-end">Qty</th><th class="text-end">Revenue</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.Revenue.ByService)
+                                {
+                                    <tr>
+                                        <td>@row.ServiceName</td>
+                                        <td class="text-end">@row.Quantity</td>
+                                        <td class="text-end fw-medium">৳@row.Revenue.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                @* By Mechanic *@
+                <div class="col-md-6">
+                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Mechanic</h6>
+                    @if (!Model.Revenue.ByMechanic.Any())
+                    {
+                        <p class="text-muted small">No data.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr><th>Mechanic</th><th class="text-end">Tickets</th><th class="text-end">Revenue</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.Revenue.ByMechanic)
+                                {
+                                    <tr>
+                                        <td>@row.MechanicName</td>
+                                        <td class="text-end">@row.TicketsDelivered</td>
+                                        <td class="text-end fw-medium">৳@row.Revenue.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tickets ─────────────────────────────────────────────── *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h6 class="fw-semibold mb-0">Ticket Report</h6>
+            <a asp-action="ExportTickets" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
+               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+        </div>
+        <div class="card-body p-4">
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Total</div>
+                        <div class="fw-bold fs-5">@Model.Tickets!.Total</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Delivered</div>
+                        <div class="fw-bold fs-5 text-success">@Model.Tickets.Delivered</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Active</div>
+                        <div class="fw-bold fs-5 text-primary">@Model.Tickets.Active</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Cancelled</div>
+                        <div class="fw-bold fs-5 text-secondary">@Model.Tickets.Cancelled</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Overdue</div>
+                        <div class="fw-bold fs-5 text-danger">@Model.Tickets.Overdue</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="bg-light rounded-3 p-3 text-center">
+                        <div class="small text-muted">Avg Days</div>
+                        <div class="fw-bold fs-5">@Model.Tickets.AvgCompletionDays</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Status</h6>
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light"><tr><th>Status</th><th class="text-end">Count</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in Model.Tickets.ByStatus)
+                            {
+                                <tr>
+                                    <td>@row.Status</td>
+                                    <td class="text-end">@row.Count</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-7">
+                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Mechanic</h6>
+                    @if (!Model.Tickets.ByMechanic.Any())
+                    {
+                        <p class="text-muted small">No mechanic data.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead class="table-light">
+                                <tr><th>Mechanic</th><th class="text-end">Total</th><th class="text-end">Delivered</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.Tickets.ByMechanic)
+                                {
+                                    <tr>
+                                        <td>@row.MechanicName</td>
+                                        <td class="text-end">@row.Total</td>
+                                        <td class="text-end text-success fw-medium">@row.Delivered</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Parts Usage ──────────────────────────────────────────── *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <h6 class="fw-semibold mb-0">Parts Usage</h6>
+            <a asp-action="ExportParts" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
+               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+        </div>
+        <div class="card-body p-4">
+            @if (!Model.PartUsage.Any())
+            {
+                <p class="text-muted small mb-0">No parts used in this period.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Part</th>
+                                <th>SKU</th>
+                                <th class="text-end">Times Used</th>
+                                <th class="text-end">Total Qty</th>
+                                <th class="text-end">Total Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.PartUsage)
+                            {
+                                <tr>
+                                    <td>@row.PartName</td>
+                                    <td class="text-muted small">@row.SKU</td>
+                                    <td class="text-end">@row.TimesUsed</td>
+                                    <td class="text-end">@row.TotalQuantity</td>
+                                    <td class="text-end fw-medium">৳@row.TotalValue.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}
+else if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}

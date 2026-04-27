@@ -1,0 +1,662 @@
+@using System.Security.Claims
+@using BikeService.Domain.Constants
+@inject BikeService.Application.Interfaces.INotificationService NotificationService
+
+<style id="site-nav-css">
+:root {
+    --nav-h: 64px;
+    --nav-font: 'Inter', system-ui, -apple-system, sans-serif;
+    --nav-text: #1E293B;
+    --nav-muted: #64748B;
+    --nav-border: rgba(0,0,0,.07);
+    --nav-hover-bg: #F1F5F9;
+    --nav-p: #5B4FE9;
+    --nav-p-dark: #4338CA;
+    --nav-radius: 8px;
+    --nav-t: 180ms ease;
+}
+
+/* ── Shell ── */
+.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 990;
+    height: var(--nav-h);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--nav-border);
+    box-shadow: 0 1px 0 rgba(0,0,0,.05);
+    font-family: var(--nav-font);
+    transition: background var(--nav-t), border-color var(--nav-t), box-shadow var(--nav-t);
+}
+.nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* ── Brand ── */
+.nav-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    text-decoration: none;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--nav-text);
+    letter-spacing: -.025em;
+    flex-shrink: 0;
+    transition: opacity var(--nav-t);
+}
+.nav-brand:hover { opacity: .8; }
+.nav-brand-icon {
+    width: 30px; height: 30px;
+    background: var(--nav-p);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+}
+
+/* ── Left links ── */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: .125rem;
+    margin-left: .25rem;
+}
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .375rem .625rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--nav-muted);
+    text-decoration: none;
+    border-radius: var(--nav-radius);
+    transition: color var(--nav-t), background var(--nav-t);
+    white-space: nowrap;
+}
+.nav-link:hover { color: var(--nav-text); background: var(--nav-hover-bg); }
+
+/* ── Admin mega-dropdown ── */
+.nav-drop { position: relative; }
+.nav-drop-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .375rem .625rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--nav-muted);
+    text-decoration: none;
+    border-radius: var(--nav-radius);
+    cursor: pointer;
+    transition: color var(--nav-t), background var(--nav-t);
+    white-space: nowrap;
+    background: none;
+    border: none;
+    font-family: var(--nav-font);
+}
+.nav-drop-toggle:hover { color: var(--nav-text); background: var(--nav-hover-bg); }
+.nav-drop-caret { transition: transform var(--nav-t); }
+.nav-drop:hover .nav-drop-caret { transform: rotate(180deg); }
+
+.nav-drop-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 220px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.05);
+    padding: .375rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity var(--nav-t), visibility var(--nav-t), transform var(--nav-t);
+    z-index: 999;
+}
+.nav-drop:hover .nav-drop-menu,
+.nav-drop:focus-within .nav-drop-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.drop-label {
+    padding: .35rem .625rem .2rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    display: block;
+}
+.drop-item {
+    display: block;
+    padding: .4rem .625rem;
+    font-size: .8375rem;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background var(--nav-t), color var(--nav-t);
+}
+.drop-item:hover { background: #F8FAFC; color: #0F172A; }
+.drop-hr {
+    height: 1px;
+    background: #F1F5F9;
+    margin: .3rem .25rem;
+    border: none;
+}
+
+/* ── Spacer ── */
+.nav-spacer { flex: 1; }
+
+/* ── Right auth ── */
+.nav-auth {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+    flex-shrink: 0;
+}
+
+/* Ghost / solid buttons */
+.btn-nav-ghost {
+    padding: .375rem .75rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--nav-muted);
+    text-decoration: none;
+    border-radius: var(--nav-radius);
+    transition: color var(--nav-t), background var(--nav-t);
+    white-space: nowrap;
+}
+.btn-nav-ghost:hover { color: var(--nav-text); background: var(--nav-hover-bg); }
+.btn-nav-solid {
+    padding: .375rem .875rem;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--nav-p);
+    text-decoration: none;
+    border-radius: var(--nav-radius);
+    transition: background var(--nav-t), box-shadow var(--nav-t), transform var(--nav-t);
+    white-space: nowrap;
+}
+.btn-nav-solid:hover {
+    background: var(--nav-p-dark);
+    box-shadow: 0 4px 12px rgba(91,79,233,.28);
+    transform: translateY(-1px);
+    color: #fff;
+}
+.btn-nav-solid:active { transform: translateY(0); }
+
+/* ── Bell ── */
+.nav-bell {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    border-radius: var(--nav-radius);
+    color: var(--nav-muted);
+    text-decoration: none;
+    transition: color var(--nav-t), background var(--nav-t);
+}
+.nav-bell:hover { color: var(--nav-text); background: var(--nav-hover-bg); }
+.nav-bell-dot {
+    position: absolute;
+    top: 5px; right: 5px;
+    min-width: 15px; height: 15px;
+    background: #EF4444;
+    border-radius: 8px;
+    font-size: .6rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+    border: 1.5px solid #fff;
+    line-height: 1;
+}
+
+/* ── Avatar dropdown ── */
+.nav-avatar-wrap { position: relative; }
+.nav-avatar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .25rem .45rem .25rem .25rem;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--nav-font);
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--nav-text);
+    transition: background var(--nav-t), border-color var(--nav-t);
+}
+.nav-avatar-btn:hover {
+    background: var(--nav-hover-bg);
+    border-color: var(--nav-border);
+}
+.nav-avatar-circle {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--nav-p);
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+
+.nav-user-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 190px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.05);
+    padding: .375rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity var(--nav-t), visibility var(--nav-t), transform var(--nav-t);
+    z-index: 999;
+}
+.nav-avatar-wrap:hover .nav-user-menu,
+.nav-avatar-wrap:focus-within .nav-user-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+.user-item {
+    display: block;
+    width: 100%;
+    padding: .4rem .625rem;
+    font-size: .84rem;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 6px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--nav-font);
+    transition: background var(--nav-t);
+}
+.user-item:hover { background: #F8FAFC; }
+.user-item.danger { color: #EF4444; }
+.user-item.danger:hover { background: #FEF2F2; }
+.user-info {
+    padding: .4rem .625rem .5rem;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: .25rem;
+}
+.user-info-name { font-size: .84rem; font-weight: 600; color: var(--nav-text); }
+.user-info-role { font-size: .75rem; color: var(--nav-muted); margin-top: .05rem; }
+
+/* ── Mobile toggle ── */
+.nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: .375rem;
+    border-radius: var(--nav-radius);
+    color: var(--nav-muted);
+    transition: color var(--nav-t), background var(--nav-t);
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.nav-toggle:hover { color: var(--nav-text); background: var(--nav-hover-bg); }
+.nav-toggle-bar {
+    display: block;
+    width: 18px; height: 1.5px;
+    background: currentColor;
+    border-radius: 2px;
+    transition: transform var(--nav-t), opacity var(--nav-t);
+    margin: 3.5px 0;
+}
+.nav-toggle.open .nav-toggle-bar:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+.nav-toggle.open .nav-toggle-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-toggle.open .nav-toggle-bar:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
+/* ── Mobile panel ── */
+.nav-panel {
+    display: none;
+    position: fixed;
+    top: var(--nav-h);
+    left: 0; right: 0;
+    background: #fff;
+    border-bottom: 1px solid #E2E8F0;
+    box-shadow: 0 12px 32px rgba(0,0,0,.1);
+    padding: .75rem 1.25rem 1.25rem;
+    flex-direction: column;
+    gap: .125rem;
+    max-height: calc(100vh - var(--nav-h));
+    overflow-y: auto;
+    z-index: 989;
+}
+.nav-panel.open { display: flex; }
+.panel-divider {
+    height: 1px;
+    background: #F1F5F9;
+    margin: .625rem 0;
+}
+.panel-label {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    padding: .25rem .5rem;
+    display: block;
+}
+.panel-link {
+    display: block;
+    padding: .5rem .625rem;
+    font-size: .875rem;
+    font-weight: 500;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 7px;
+    transition: background var(--nav-t), color var(--nav-t);
+}
+.panel-link:hover { background: #F8FAFC; color: #0F172A; }
+.panel-link.danger { color: #EF4444; }
+.panel-auth {
+    display: flex;
+    flex-direction: column;
+    gap: .375rem;
+    margin-top: .25rem;
+}
+.btn-panel-ghost {
+    display: block;
+    padding: .6rem .875rem;
+    text-align: center;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--nav-muted);
+    text-decoration: none;
+    border: 1.5px solid #E2E8F0;
+    border-radius: var(--nav-radius);
+    transition: color var(--nav-t), border-color var(--nav-t);
+}
+.btn-panel-ghost:hover { color: var(--nav-text); border-color: #CBD5E1; }
+.btn-panel-solid {
+    display: block;
+    padding: .6rem .875rem;
+    text-align: center;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--nav-p);
+    text-decoration: none;
+    border-radius: var(--nav-radius);
+    transition: background var(--nav-t);
+}
+.btn-panel-solid:hover { background: var(--nav-p-dark); color: #fff; }
+
+/* ── Transparent mode (homepage hero) ── */
+.site-nav.nav-top {
+    background: transparent !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom-color: transparent;
+    box-shadow: none;
+}
+.site-nav.nav-top .nav-brand { color: #fff; }
+.site-nav.nav-top .nav-link { color: rgba(255,255,255,.8); }
+.site-nav.nav-top .nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+.site-nav.nav-top .nav-drop-toggle { color: rgba(255,255,255,.8); }
+.site-nav.nav-top .nav-drop-toggle:hover { color: #fff; background: rgba(255,255,255,.1); }
+.site-nav.nav-top .btn-nav-ghost { color: rgba(255,255,255,.85); }
+.site-nav.nav-top .btn-nav-ghost:hover { color: #fff; background: rgba(255,255,255,.1); }
+.site-nav.nav-top .nav-bell { color: rgba(255,255,255,.8); }
+.site-nav.nav-top .nav-bell:hover { color: #fff; background: rgba(255,255,255,.1); }
+.site-nav.nav-top .nav-avatar-btn { color: #fff; }
+.site-nav.nav-top .nav-avatar-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); }
+.site-nav.nav-top .nav-toggle { color: rgba(255,255,255,.85); }
+.site-nav.nav-top .nav-toggle:hover { background: rgba(255,255,255,.1); }
+
+/* ── Responsive ── */
+@@media (max-width: 991px) {
+    .nav-toggle { display: flex; flex-direction: column; }
+    .nav-links, .nav-auth, .nav-spacer { display: none !important; }
+}
+@@media (min-width: 992px) {
+    .nav-panel { display: none !important; }
+}
+</style>
+
+<nav class="site-nav" id="siteNav" role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+
+        @* Logo *@
+        <a class="nav-brand" asp-controller="Home" asp-action="Index">
+            <span class="nav-brand-icon">🚲</span>
+            BikeService
+        </a>
+
+        @* Desktop left links *@
+        <div class="nav-links">
+            <a class="nav-link" asp-controller="Offer" asp-action="Index">Offers</a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole("Customer"))
+                {
+                    <a class="nav-link" asp-controller="Appointment" asp-action="Index">Appointments</a>
+                    <a class="nav-link" asp-controller="ServiceTicket" asp-action="Index">My Tickets</a>
+                    <a class="nav-link" asp-controller="Invoice" asp-action="Index">Invoices</a>
+                }
+                @if (User.IsInRole("Mechanic"))
+                {
+                    <a class="nav-link" asp-controller="Mechanic" asp-action="Index">Dashboard</a>
+                    <a class="nav-link" asp-controller="Mechanic" asp-action="Tickets">My Tickets</a>
+                    <a class="nav-link" asp-controller="Mechanic" asp-action="Leave">Leave</a>
+                }
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="nav-drop">
+                        <button class="nav-drop-toggle" aria-haspopup="true" aria-expanded="false">
+                            Admin
+                            <svg class="nav-drop-caret" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="nav-drop-menu" role="menu">
+                            <span class="drop-label">Service</span>
+                            <a class="drop-item" asp-controller="Ticket" asp-action="Index">Tickets</a>
+                            <a class="drop-item" asp-controller="AdminAppointment" asp-action="Index">Appointments</a>
+                            <a class="drop-item" asp-controller="ServiceType" asp-action="Index">Service Types</a>
+                            <hr class="drop-hr" />
+                            <span class="drop-label">Staff</span>
+                            <a class="drop-item" asp-controller="AdminMechanic" asp-action="Index">Mechanics</a>
+                            <a class="drop-item" asp-controller="LeaveRequest" asp-action="Index">Leave Requests</a>
+                            <a class="drop-item" asp-controller="Customer" asp-action="Index">Customers</a>
+                            <hr class="drop-hr" />
+                            <span class="drop-label">Finance & Inventory</span>
+                            <a class="drop-item" asp-controller="AdminInvoice" asp-action="Index">Invoices</a>
+                            <a class="drop-item" asp-controller="PromoCode" asp-action="Index">Promo Codes</a>
+                            <a class="drop-item" asp-controller="PaymentGateway" asp-action="Index">Payment Gateways</a>
+                            <a class="drop-item" asp-controller="Payroll" asp-action="Index">Payroll</a>
+                            <a class="drop-item" asp-controller="Inventory" asp-action="Index">Parts</a>
+                            <hr class="drop-hr" />
+                            <span class="drop-label">System</span>
+                            <a class="drop-item" asp-controller="Analytics" asp-action="Index">Analytics</a>
+                            <a class="drop-item" asp-controller="Report" asp-action="Index">Reports</a>
+                            <a class="drop-item" asp-controller="AuditLog" asp-action="Index">Audit Logs</a>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="nav-spacer"></div>
+
+        @* Desktop right auth *@
+        <div class="nav-auth">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                var fullName   = User.FindFirstValue(ClaimTypes.Name) ?? "User";
+                var initial    = fullName.Length > 0 ? fullName[0].ToString().ToUpper() : "U";
+                var firstName  = fullName.Split(' ')[0];
+                var userId     = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var unreadCount = await NotificationService.GetUnreadCountAsync(userId);
+                var role       = User.IsInRole("Admin") ? "Admin" : User.IsInRole("Mechanic") ? "Mechanic" : "Customer";
+
+                @* Bell *@
+                <a class="nav-bell" asp-controller="Notification" asp-action="Index" title="Notifications"
+                   aria-label="Notifications">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    @if (unreadCount > 0)
+                    {
+                        <span class="nav-bell-dot">@(unreadCount > 99 ? "99+" : unreadCount.ToString())</span>
+                    }
+                </a>
+
+                @* Avatar dropdown *@
+                <div class="nav-avatar-wrap">
+                    <button class="nav-avatar-btn" aria-haspopup="true" aria-expanded="false">
+                        <span class="nav-avatar-circle">@initial</span>
+                        <span>@firstName</span>
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="opacity:.6">
+                            <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" stroke-width="1.5"
+                                  stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="nav-user-menu" role="menu">
+                        <div class="user-info">
+                            <div class="user-info-name">@fullName</div>
+                            <div class="user-info-role">@role</div>
+                        </div>
+                        <a class="user-item" asp-controller="Account" asp-action="Profile">Profile</a>
+                        <a class="user-item" asp-controller="Account" asp-action="ChangePassword">Change Password</a>
+                        <hr class="drop-hr" />
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                            <button type="submit" class="user-item danger">Sign Out</button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <a class="btn-nav-ghost" asp-controller="Account" asp-action="Login">Sign In</a>
+                <a class="btn-nav-solid" asp-controller="Account" asp-action="Register">Get Started</a>
+            }
+        </div>
+
+        @* Mobile toggle *@
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+        </button>
+    </div>
+</nav>
+
+@* Mobile panel — separate from nav so it can be position:fixed below the sticky bar *@
+<div class="nav-panel" id="navPanel" aria-label="Mobile navigation">
+    <a class="panel-link" asp-controller="Offer" asp-action="Index">Offers</a>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        var mFullName  = User.FindFirstValue(ClaimTypes.Name) ?? "User";
+        var mInitial   = mFullName.Length > 0 ? mFullName[0].ToString().ToUpper() : "U";
+        var mRole      = User.IsInRole("Admin") ? "Admin" : User.IsInRole("Mechanic") ? "Mechanic" : "Customer";
+
+        if (User.IsInRole("Customer"))
+        {
+            <a class="panel-link" asp-controller="Appointment" asp-action="Index">Appointments</a>
+            <a class="panel-link" asp-controller="ServiceTicket" asp-action="Index">My Tickets</a>
+            <a class="panel-link" asp-controller="Invoice" asp-action="Index">Invoices</a>
+        }
+        if (User.IsInRole("Mechanic"))
+        {
+            <a class="panel-link" asp-controller="Mechanic" asp-action="Index">Dashboard</a>
+            <a class="panel-link" asp-controller="Mechanic" asp-action="Tickets">My Tickets</a>
+            <a class="panel-link" asp-controller="Mechanic" asp-action="Leave">Leave</a>
+        }
+        if (User.IsInRole("Admin"))
+        {
+            <div class="panel-divider"></div>
+            <span class="panel-label">Admin — Service</span>
+            <a class="panel-link" asp-controller="Ticket" asp-action="Index">Tickets</a>
+            <a class="panel-link" asp-controller="AdminAppointment" asp-action="Index">Appointments</a>
+            <a class="panel-link" asp-controller="ServiceType" asp-action="Index">Service Types</a>
+            <span class="panel-label" style="margin-top:.375rem;">Staff</span>
+            <a class="panel-link" asp-controller="AdminMechanic" asp-action="Index">Mechanics</a>
+            <a class="panel-link" asp-controller="LeaveRequest" asp-action="Index">Leave Requests</a>
+            <a class="panel-link" asp-controller="Customer" asp-action="Index">Customers</a>
+            <span class="panel-label" style="margin-top:.375rem;">Finance &amp; System</span>
+            <a class="panel-link" asp-controller="AdminInvoice" asp-action="Index">Invoices</a>
+            <a class="panel-link" asp-controller="Analytics" asp-action="Index">Analytics</a>
+            <a class="panel-link" asp-controller="Report" asp-action="Index">Reports</a>
+        }
+
+        <div class="panel-divider"></div>
+        <div style="display:flex;align-items:center;gap:.625rem;padding:.25rem .5rem .625rem;">
+            <div class="nav-avatar-circle">@mInitial</div>
+            <div>
+                <div style="font-size:.875rem;font-weight:600;color:#1E293B;">@mFullName</div>
+                <div style="font-size:.75rem;color:#64748B;">@mRole</div>
+            </div>
+        </div>
+
+        <a class="panel-link" asp-controller="Account" asp-action="Profile">Profile</a>
+        <a class="panel-link" asp-controller="Account" asp-action="ChangePassword">Change Password</a>
+        <a class="panel-link" asp-controller="Notification" asp-action="Index">Notifications</a>
+        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+            <button type="submit" class="panel-link danger" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;">
+                Sign Out
+            </button>
+        </form>
+    }
+    else
+    {
+        <div class="panel-auth">
+            <a class="btn-panel-ghost" asp-controller="Account" asp-action="Login">Sign In</a>
+            <a class="btn-panel-solid" asp-controller="Account" asp-action="Register">Get Started — it's free</a>
+        </div>
+    }
+</div>
+
+<script>
+(function () {
+    var toggle = document.getElementById('navToggle');
+    var panel  = document.getElementById('navPanel');
+    if (!toggle || !panel) return;
+
+    toggle.addEventListener('click', function () {
+        var open = panel.classList.toggle('open');
+        toggle.classList.toggle('open', open);
+        toggle.setAttribute('aria-expanded', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+    });
+
+    /* Close on outside click */
+    document.addEventListener('click', function (e) {
+        if (!toggle.contains(e.target) && !panel.contains(e.target)) {
+            panel.classList.remove('open');
+            toggle.classList.remove('open');
+            toggle.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+        }
+    });
+})();
+</script>

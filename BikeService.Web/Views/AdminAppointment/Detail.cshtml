@@ -1,0 +1,95 @@
+@using BikeService.Application.DTOs.Appointment
+@using BikeService.Domain.Enums
+@model AppointmentDto
+@{
+    ViewData["Title"] = $"Appointment #{Model.Id}";
+
+    string GetStatusColor(AppointmentStatus s) => s switch
+    {
+        AppointmentStatus.Scheduled => "secondary",
+        AppointmentStatus.Confirmed => "primary",
+        AppointmentStatus.Completed => "success",
+        AppointmentStatus.Cancelled => "danger",
+        _ => "secondary"
+    };
+}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary">&larr; Back</a>
+    <h4 class="mb-0 fw-semibold">Appointment #@Model.Id</h4>
+    <span class="badge bg-@GetStatusColor(Model.Status) fs-6">@Model.StatusLabel</span>
+</div>
+
+<div class="row g-4">
+    <!-- Details card -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Appointment Details</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Bike</dt>
+                    <dd class="col-sm-8">@Model.BikeSummary</dd>
+
+                    <dt class="col-sm-4 text-muted">Customer</dt>
+                    <dd class="col-sm-8">@Model.CustomerName</dd>
+
+                    <dt class="col-sm-4 text-muted">Appointment Date</dt>
+                    <dd class="col-sm-8">@Model.AppointmentDate.ToString("dddd, MMMM dd, yyyy HH:mm")</dd>
+
+                    <dt class="col-sm-4 text-muted">Notes</dt>
+                    <dd class="col-sm-8">@(string.IsNullOrWhiteSpace(Model.Notes) ? "—" : Model.Notes)</dd>
+
+                    <dt class="col-sm-4 text-muted">Status</dt>
+                    <dd class="col-sm-8"><span class="badge bg-@GetStatusColor(Model.Status)">@Model.StatusLabel</span></dd>
+
+                    <dt class="col-sm-4 text-muted">Created</dt>
+                    <dd class="col-sm-8">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions card -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-semibold">Actions</div>
+            <div class="card-body d-grid gap-2">
+                @Html.AntiForgeryToken()
+
+                @if (Model.Status == AppointmentStatus.Scheduled)
+                {
+                    <form method="post" asp-action="Confirm" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary w-100">Confirm Appointment</button>
+                    </form>
+                }
+
+                @if (Model.Status == AppointmentStatus.Confirmed && !Model.HasTicket)
+                {
+                    <form method="post" asp-action="CreateTicket" asp-route-id="@Model.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success w-100">Create Service Ticket</button>
+                    </form>
+                }
+                @if (Model.HasTicket)
+                {
+                    <p class="text-muted small mb-0">Service ticket already created for this appointment.</p>
+                }
+
+                @if (Model.Status != AppointmentStatus.Cancelled && Model.Status != AppointmentStatus.Completed)
+                {
+                    <form method="post" asp-action="Cancel" asp-route-id="@Model.Id"
+                          onsubmit="return confirm('Cancel this appointment?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger w-100">Cancel Appointment</button>
+                    </form>
+                }
+
+                @if (Model.Status == AppointmentStatus.Cancelled || Model.Status == AppointmentStatus.Completed)
+                {
+                    <p class="text-muted text-center small mb-0">No further actions available.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

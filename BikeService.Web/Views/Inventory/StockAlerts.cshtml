@@ -1,0 +1,74 @@
+@model List<BikeService.Application.DTOs.Part.PartStockAlertDto>
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Stock Alerts";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">
+        Stock Alerts
+        @if (Model.Any())
+        {
+            <span class="badge bg-danger ms-2">@Model.Count</span>
+        }
+    </h4>
+    <a asp-controller="Inventory" asp-action="Index" class="btn btn-outline-secondary">
+        &larr; Back to Inventory
+    </a>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <p class="mb-2 fs-5">All clear!</p>
+                <p class="mb-0 small">No unresolved stock alerts at this time.</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Part Name</th>
+                            <th>SKU</th>
+                            <th>Current Stock</th>
+                            <th>Threshold</th>
+                            <th>Alert Date</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var alert in Model)
+                        {
+                            <tr>
+                                <td>@alert.Id</td>
+                                <td class="fw-medium">@alert.PartName</td>
+                                <td><span class="font-monospace text-muted small">@alert.PartSKU</span></td>
+                                <td>
+                                    <span class="fw-semibold text-danger">@alert.StockQuantity</span>
+                                </td>
+                                <td>@alert.LowStockThreshold</td>
+                                <td class="text-muted small">@alert.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                <td class="text-end">
+                                    <form asp-controller="Inventory" asp-action="ResolveAlert"
+                                          asp-route-alertId="@alert.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            Resolve
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

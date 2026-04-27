@@ -1,0 +1,126 @@
+@model BikeService.Web.ViewModels.Mechanic.MechanicFormViewModel
+@{
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+    ViewData["Title"] = "Edit Mechanic";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Edit Mechanic</h4>
+    <a asp-controller="AdminMechanic" asp-action="Index" class="btn btn-outline-secondary">&larr; Back to List</a>
+</div>
+
+<div style="max-width:580px;">
+
+    @* ── Mechanic details form ── *@
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white fw-semibold">Mechanic Details</div>
+        <div class="card-body p-4">
+            <form asp-controller="AdminMechanic" asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                <input asp-for="Id" type="hidden" />
+
+                <div class="mb-3">
+                    <label asp-for="FullName" class="form-label fw-medium"></label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Specialty" class="form-label fw-medium"></label>
+                    <input asp-for="Specialty" class="form-control" />
+                    <span asp-validation-for="Specialty" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
+                        <label asp-for="IsAvailable" class="form-check-label">Currently available for assignments</label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                    <a asp-controller="AdminMechanic" asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* ── Login account — separate card, separate form ── *@
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white fw-semibold">Portal Login</div>
+        <div class="card-body p-4">
+
+            @if (!string.IsNullOrEmpty(Model.LinkedEmail))
+            {
+                @* Account exists — show status + toggle *@
+                <div class="d-flex align-items-center justify-content-between p-3 rounded border
+                            @(Model.IsLoginActive ? "bg-success bg-opacity-10 border-success-subtle" : "bg-secondary bg-opacity-10 border-secondary-subtle")
+                            mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="@(Model.IsLoginActive ? "text-success" : "text-secondary") fs-5">
+                            @(Model.IsLoginActive ? "●" : "○")
+                        </span>
+                        <div>
+                            <div class="fw-medium small">@(Model.IsLoginActive ? "Login active" : "Login deactivated")</div>
+                            <div class="text-muted small">@Model.LinkedEmail</div>
+                        </div>
+                    </div>
+                    <form asp-controller="AdminMechanic" asp-action="ToggleLogin" asp-route-id="@Model.Id" method="post" class="ms-2">
+                        @Html.AntiForgeryToken()
+                        @if (Model.IsLoginActive)
+                        {
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-sm btn-outline-success">Activate</button>
+                        }
+                    </form>
+                </div>
+            }
+            else
+            {
+                @* No account yet — show create form *@
+                <div class="d-flex align-items-center gap-2 mb-3 p-2 bg-warning bg-opacity-10 rounded border border-warning-subtle">
+                    <span class="text-warning">&#9888;</span>
+                    <span class="small text-muted">No login account — mechanic cannot access the portal.</span>
+                </div>
+
+                @if (TempData["LoginError"] is string loginErr)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show py-2 px-3 mb-3 small" role="alert">
+                        @loginErr
+                        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form asp-controller="AdminMechanic" asp-action="CreateLogin" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2">
+                        <label class="form-label small fw-medium mb-1">Login Email <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control form-control-sm"
+                               placeholder="e.g. mechanic@bikeservice.com" autocomplete="off" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-medium mb-1">Temporary Password <span class="text-danger">*</span></label>
+                        <input type="password" name="password" class="form-control form-control-sm"
+                               placeholder="Min. 6 characters" autocomplete="new-password" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-medium mb-1">Confirm Password <span class="text-danger">*</span></label>
+                        <input type="password" name="confirmPassword" class="form-control form-control-sm"
+                               placeholder="Repeat password" autocomplete="new-password" required />
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm px-4">Activate Login</button>
+                </form>
+            }
+
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

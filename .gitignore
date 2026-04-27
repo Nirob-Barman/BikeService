@@ -1,0 +1,63 @@
+## Build outputs
+# ignore all bin directories anywhere
+# ignore all obj directories anywhere
+bin/
+obj/
+
+## User-specific VS/Rider files
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+
+## Publish output
+publish/
+**/publish/
+
+## EF Core migrations snapshot (keep migrations, ignore designer cache)
+# If you want to exclude nothing here, leave blank — migrations should be committed
+
+## Secrets & credentials — NEVER commit these
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+**/secrets.json
+**/.env
+
+## ASP.NET Data Protection keys (generated at runtime)
+**/DataProtection-Keys/
+
+## Static file uploads (user-uploaded images, CSVs, etc.)
+**/wwwroot/uploads/
+
+## Logs
+logs/
+*.log
+
+## OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## NuGet
+*.nupkg
+.nuget/
+packages/
+
+## Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Ignore Claude / Anthropic files
+.claude/
+claude/
+claude.*
+anthropic/
+anthropic.*
+
+# Claude config / logs
+*.claude.json
+claude.log

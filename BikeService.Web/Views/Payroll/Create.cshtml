@@ -1,0 +1,117 @@
+@model BikeService.Web.ViewModels.Payroll.PayrollRecordFormViewModel
+@{
+    ViewData["Title"] = "New Payroll Record";
+    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">New Payroll Record</h4>
+        <small class="text-muted">Create a salary record for a mechanic</small>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Mechanic -->
+                    <div class="mb-3">
+                        <label asp-for="MechanicId" class="form-label fw-semibold">Mechanic</label>
+                        <select asp-for="MechanicId" asp-items="ViewBag.Mechanics"
+                                class="form-select">
+                            <option value="">— Select mechanic —</option>
+                        </select>
+                        <span asp-validation-for="MechanicId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Period -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label asp-for="Month" class="form-label fw-semibold">Month</label>
+                            <select asp-for="Month" class="form-select">
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    var name = new DateTime(2000, m, 1).ToString("MMMM");
+                                    <option value="@m">@name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Month" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Year" class="form-label fw-semibold">Year</label>
+                            <select asp-for="Year" class="form-select">
+                                @for (int y = DateTime.Today.Year; y >= DateTime.Today.Year - 5; y--)
+                                {
+                                    <option value="@y">@y</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Year" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Amounts -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="BaseSalary" class="form-label fw-semibold">Base Salary (৳)</label>
+                            <input asp-for="BaseSalary" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="BaseSalary" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Bonus" class="form-label fw-semibold">Bonus (৳)</label>
+                            <input asp-for="Bonus" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="Bonus" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Deductions" class="form-label fw-semibold">Deductions (৳)</label>
+                            <input asp-for="Deductions" type="number" step="0.01" min="0"
+                                   class="form-control" oninput="calcNet()" />
+                            <span asp-validation-for="Deductions" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <!-- Net pay preview -->
+                    <div class="alert alert-info py-2 mb-3">
+                        Net Pay: <strong id="netPay">৳0.00</strong>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"
+                                  placeholder="Any additional remarks..."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save me-1"></i> Create Record
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<partial name="_ValidationScriptsPartial" />
+<script>
+    function calcNet() {
+        const base = parseFloat(document.getElementById('BaseSalary').value) || 0;
+        const bon  = parseFloat(document.getElementById('Bonus').value)      || 0;
+        const ded  = parseFloat(document.getElementById('Deductions').value) || 0;
+        document.getElementById('netPay').textContent = '৳' + (base + bon - ded).toFixed(2);
+    }
+    calcNet();
+</script>
+}

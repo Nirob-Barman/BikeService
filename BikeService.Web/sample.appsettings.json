@@ -1,0 +1,28 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=.\\SQLEXPRESS;Database=BikeService;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "EmailSettings": {
+    "SmtpServer": "smtp.gmail.com",
+    "Port": 587,
+    "SenderEmail": "your-email@gmail.com",
+    "SenderName": "BikeService",
+    "Username": "your-email@gmail.com",
+    "Password": "your-app-password",
+    "EnableSsl": true
+  },
+  "Redis": {
+    "ConnectionString": "your-redis-connection-string",
+    "InstanceName": "BikeService:"
+  },
+  "Imgbb": {
+    "ApiKey": "your-imgbb-api-key"
+  }
+}

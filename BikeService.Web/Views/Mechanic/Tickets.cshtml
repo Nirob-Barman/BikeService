@@ -1,0 +1,75 @@
+@using BikeService.Application.DTOs.ServiceTicket
+@using BikeService.Domain.Enums
+@model List<ServiceTicketDto>
+@{
+    Layout = "~/Views/Shared/_MechanicLayout.cshtml";
+    ViewData["Title"] = "My Tickets";
+
+    string StatusColor(ServiceTicketStatus s) => s switch
+    {
+        ServiceTicketStatus.Pending        => "secondary",
+        ServiceTicketStatus.Diagnosed      => "info",
+        ServiceTicketStatus.InProgress     => "primary",
+        ServiceTicketStatus.QualityCheck   => "warning",
+        ServiceTicketStatus.ReadyForPickup => "success",
+        _                                  => "dark"
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="fw-semibold mb-0">My Assigned Tickets</h4>
+        <p class="text-muted small mb-0">All active work orders assigned to you</p>
+    </div>
+    <span class="badge bg-dark fs-6 fw-normal">@Model.Count active</span>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor"
+                 class="mb-3 opacity-25" viewBox="0 0 16 16">
+                <path d="M0 1.5A1.5 1.5 0 0 1 1.5 0h13A1.5 1.5 0 0 1 16 1.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13zm1.5-.5a.5.5 0 0 0-.5.5V5h14V1.5a.5.5 0 0 0-.5-.5h-13zM16 6H0v8.5a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5V6z"/>
+            </svg>
+            <p class="mb-0 fw-medium">No active tickets assigned to you.</p>
+            <p class="small">Check back later or contact your supervisor.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var t in Model)
+        {
+            var color = StatusColor(t.Status);
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100 @(t.IsOverdue ? "border-start border-danger border-3" : "")">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="text-muted small">#@t.Id</span>
+                            <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                <span class="badge bg-@color">@t.StatusLabel</span>
+                                @if (t.IsOverdue) { <span class="badge bg-danger">Overdue</span> }
+                            </div>
+                        </div>
+                        <h6 class="fw-semibold mb-1">@t.BikeSummary</h6>
+                        <p class="text-muted small mb-3">@(t.CustomerName ?? "Unknown customer")</p>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span class="@(t.IsOverdue ? "text-danger fw-medium" : "")">
+                                @(t.EstimatedCompletionDate.HasValue
+                                    ? "Due " + t.EstimatedCompletionDate.Value.ToLocalTime().ToString("MMM d")
+                                    : "No due date")
+                            </span>
+                            <span>@t.Items.Count item(s)</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pt-0">
+                        <a asp-action="Detail" asp-route-id="@t.Id"
+                           class="btn btn-sm btn-outline-success w-100">Open Ticket &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

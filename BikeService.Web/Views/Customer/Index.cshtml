@@ -1,0 +1,142 @@
+@using BikeService.Application.DTOs.Customer
+@model List<CustomerDto>
+@{
+    ViewData["Title"] = "Customers";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-semibold">Customers</h4>
+    <span class="text-muted small" id="countLabel">Total: @Model.Count</span>
+</div>
+
+<!-- Search -->
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="input-group input-group-sm" style="max-width:360px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="customerSearch" class="form-control border-start-0"
+                   placeholder="Search by name or email…" autocomplete="off" />
+            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">Clear</button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No customers found.</td>
+                        </tr>
+                    }
+                    @foreach (var customer in Model)
+                    {
+                        <tr data-search="@((customer.FullName + " " + customer.Email).ToLower())">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                         style="width:36px;height:36px;font-size:.85rem;flex-shrink:0;">
+                                        @(customer.FullName?.Length > 0 ? customer.FullName[0].ToString().ToUpper() : "?")
+                                    </div>
+                                    <span class="fw-medium">@customer.FullName</span>
+                                </div>
+                            </td>
+                            <td class="text-muted">@customer.Email</td>
+                            <td>
+                                @if (customer.IsBanned)
+                                {
+                                    <span class="badge bg-danger">Banned</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@customer.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td class="text-end">
+                                @if (customer.IsBanned)
+                                {
+                                    <form method="post" asp-action="Unban" asp-route-id="@customer.Id" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-outline-success">Unban</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-action="Ban" asp-route-id="@customer.Id" class="d-inline ban-form">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-ban"
+                                                data-name="@customer.FullName">Ban</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Ban confirmation
+    document.querySelectorAll('.btn-ban').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const name = this.dataset.name;
+            const form = this.closest('.ban-form');
+            Swal.fire({
+                title: 'Ban Customer?',
+                html: `<strong>${name}</strong> will be locked out and unable to log in.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, ban',
+                cancelButtonText: 'Cancel'
+            }).then(result => {
+                if (result.isConfirmed) form.submit();
+            });
+        });
+    });
+
+    // Client-side search
+    const searchInput  = document.getElementById('customerSearch');
+    const countLabel   = document.getElementById('countLabel');
+    const totalCount   = @Model.Count;
+
+    function filterTable() {
+        const q    = searchInput.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('tbody tr[data-search]');
+        let visible = 0;
+        rows.forEach(row => {
+            const match = !q || row.dataset.search.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        countLabel.textContent = q
+            ? `Showing ${visible} of ${totalCount}`
+            : `Total: ${totalCount}`;
+    }
+
+    function clearSearch() {
+        searchInput.value = '';
+        filterTable();
+        searchInput.focus();
+    }
+
+    searchInput.addEventListener('input', filterTable);
+</script>
+}

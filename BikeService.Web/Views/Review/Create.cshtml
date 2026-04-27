@@ -1,0 +1,116 @@
+@using BikeService.Web.ViewModels.Review
+@model ReviewFormViewModel
+@{
+    ViewData["Title"] = "Leave a Review";
+}
+
+@section Styles {
+<style>
+    .cst-stars { display: flex; gap: .375rem; align-items: center; margin-top: .25rem; }
+    .cst-star-label {
+        font-size: 2rem;
+        line-height: 1;
+        color: var(--border);
+        cursor: pointer;
+        transition: color 120ms ease, transform 120ms ease;
+        user-select: none;
+    }
+    .cst-star-label:hover,
+    .cst-star-label.lit { color: #F59E0B; transform: scale(1.12); }
+</style>
+}
+
+<div style="max-width:500px;">
+
+    <div class="cst-page-head" style="margin-bottom:1.25rem;">
+        <div class="cst-page-head-left">
+            <a asp-controller="ServiceTicket" asp-action="Detail" asp-route-id="@Model.ServiceTicketId"
+               class="cst-back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to Ticket
+            </a>
+        </div>
+    </div>
+
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <div>
+                <div class="cst-card-title">Leave a Review</div>
+                <div style="font-size:.775rem;color:var(--muted);margin-top:.2rem;">@Model.BikeSummary</div>
+            </div>
+        </div>
+        <div class="cst-card-body">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ServiceTicketId" />
+                <input type="hidden" asp-for="BikeSummary" />
+
+                <div asp-validation-summary="ModelOnly" class="cst-alert cst-alert-danger"></div>
+
+                <div class="cst-form-group">
+                    <label class="cst-label">Your Rating</label>
+                    <div class="cst-stars" id="starContainer">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <label class="cst-star-label" data-value="@i">
+                                &#9733;
+                                <input type="radio" asp-for="Rating" value="@i"
+                                       style="position:absolute;opacity:0;pointer-events:none;" />
+                            </label>
+                        }
+                    </div>
+                    <span asp-validation-for="Rating" class="cst-field-error"></span>
+                </div>
+
+                <div class="cst-form-group">
+                    <label asp-for="Comment" class="cst-label">
+                        Comment <span class="opt">(optional)</span>
+                    </label>
+                    <textarea asp-for="Comment" class="cst-textarea" rows="4"
+                              placeholder="Tell us about your experience…"></textarea>
+                    <span asp-validation-for="Comment" class="cst-field-error"></span>
+                </div>
+
+                <div style="display:flex;gap:.5rem;">
+                    <button type="submit" class="cst-btn cst-btn-primary cst-btn-lg">Submit Review</button>
+                    <a asp-controller="ServiceTicket" asp-action="Detail" asp-route-id="@Model.ServiceTicketId"
+                       class="cst-btn cst-btn-outline cst-btn-lg">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var labels   = Array.from(document.querySelectorAll('.cst-star-label'));
+            var selected = 0;
+
+            function paint(upTo) {
+                labels.forEach(function (l, idx) {
+                    l.classList.toggle('lit', idx < upTo);
+                });
+            }
+
+            labels.forEach(function (lbl) {
+                lbl.addEventListener('click', function () {
+                    selected = parseInt(lbl.dataset.value);
+                    lbl.querySelector('input').checked = true;
+                    paint(selected);
+                });
+                lbl.addEventListener('mouseenter', function () {
+                    paint(parseInt(lbl.dataset.value));
+                });
+            });
+
+            document.getElementById('starContainer').addEventListener('mouseleave', function () {
+                paint(selected);
+            });
+        })();
+    </script>
+}

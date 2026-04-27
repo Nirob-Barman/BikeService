@@ -1,0 +1,333 @@
+@model BikeService.Web.ViewModels.ServiceTicket.ServiceTicketDetailViewModel
+@using BikeService.Domain.Enums
+@using System.Security.Claims
+@{
+    ViewData["Title"] = $"Ticket #{Model.Ticket.Id}";
+
+    var statuses = new[]
+    {
+        ServiceTicketStatus.Pending,
+        ServiceTicketStatus.Diagnosed,
+        ServiceTicketStatus.InProgress,
+        ServiceTicketStatus.QualityCheck,
+        ServiceTicketStatus.ReadyForPickup,
+        ServiceTicketStatus.Delivered,
+    };
+
+    int currentIdx = Model.Ticket.Status == ServiceTicketStatus.Cancelled
+        ? -1
+        : Array.IndexOf(statuses, Model.Ticket.Status);
+
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    string StatusLabel(ServiceTicketStatus s) => s switch
+    {
+        ServiceTicketStatus.InProgress     => "In Progress",
+        ServiceTicketStatus.QualityCheck   => "Quality Check",
+        ServiceTicketStatus.ReadyForPickup => "Ready",
+        _                                  => s.ToString()
+    };
+}
+
+@section Styles {
+<style>
+    /* ── Timeline ── */
+    .cst-timeline { display: flex; align-items: flex-start; overflow-x: auto; padding: .25rem 0 .75rem; scrollbar-width: none; }
+    .cst-timeline::-webkit-scrollbar { display: none; }
+    .cst-tl-step { display: flex; flex-direction: column; align-items: center; min-width: 88px; }
+    .cst-tl-dot {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .cst-tl-dot.done    { background: var(--success); color: #fff; }
+    .cst-tl-dot.current { background: var(--cp); color: #fff; box-shadow: 0 0 0 5px var(--cp-ring); }
+    .cst-tl-dot.pending { background: var(--surface); border: 2px solid var(--border); color: var(--label); }
+    .cst-tl-label { font-size: .7rem; font-weight: 500; margin-top: .5rem; text-align: center; line-height: 1.3; max-width: 70px; }
+    .cst-tl-label.done    { color: var(--success); }
+    .cst-tl-label.current { color: var(--cp); font-weight: 700; }
+    .cst-tl-label.pending { color: var(--label); }
+    .cst-tl-line { flex: 1; height: 2px; margin-top: 16px; min-width: 20px; }
+    .cst-tl-line.done    { background: var(--success); }
+    .cst-tl-line.pending { background: var(--border); }
+
+    /* ── Detail grid ── */
+    .cst-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem; }
+    @@media (max-width: 767px) { .cst-detail-grid { grid-template-columns: 1fr; } }
+
+    /* ── Notes / Chat ── */
+    .cst-notes-thread {
+        display: flex; flex-direction: column; gap: .75rem;
+        max-height: 380px; overflow-y: auto;
+        padding: .25rem 0 .75rem;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+    .cst-notes-thread::-webkit-scrollbar { width: 4px; }
+    .cst-notes-thread::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .cst-msg { display: flex; }
+    .cst-msg.own { justify-content: flex-end; }
+    .cst-msg-bubble { max-width: 72%; padding: .625rem .875rem; border-radius: 12px; }
+    .cst-msg.own .cst-msg-bubble { background: var(--cp); border-bottom-right-radius: 3px; }
+    .cst-msg:not(.own) .cst-msg-bubble { background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .cst-msg-meta { display: flex; align-items: center; gap: .35rem; margin-bottom: .2rem; }
+    .cst-msg-author { font-size: .75rem; font-weight: 600; }
+    .cst-msg.own .cst-msg-author { color: rgba(255,255,255,.75); }
+    .cst-msg:not(.own) .cst-msg-author { color: var(--text-2); }
+    .cst-msg-role { font-size: .6rem; font-weight: 700; padding: .1rem .4rem; border-radius: 4px; }
+    .cst-msg.own .cst-msg-role { background: rgba(255,255,255,.2); color: rgba(255,255,255,.9); }
+    .cst-msg-role.mechanic { background: var(--success-bg); color: var(--success); }
+    .cst-msg-role.customer { background: var(--cp-light); color: var(--cp); }
+    .cst-msg-text { font-size: .8375rem; line-height: 1.5; word-break: break-word; }
+    .cst-msg.own .cst-msg-text { color: #fff; }
+    .cst-msg:not(.own) .cst-msg-text { color: var(--text-2); }
+    .cst-msg-time { font-size: .695rem; margin-top: .25rem; }
+    .cst-msg.own .cst-msg-time { color: rgba(255,255,255,.5); text-align: right; }
+    .cst-msg:not(.own) .cst-msg-time { color: var(--label); }
+    /* Send form */
+    .cst-note-form { display: flex; gap: .5rem; }
+    .cst-note-input {
+        flex: 1; padding: .5rem .75rem;
+        font-family: var(--font); font-size: .875rem; color: var(--text);
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius); outline: none;
+        transition: border-color var(--t), box-shadow var(--t);
+    }
+    .cst-note-input:focus { border-color: var(--cp); box-shadow: 0 0 0 3px var(--cp-ring); }
+</style>
+}
+
+@* ── Page header ── *@
+<div class="cst-page-head">
+    <div class="cst-page-head-left">
+        <a asp-action="Index" class="cst-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            My Tickets
+        </a>
+        <span style="color:var(--border);">/</span>
+        <h2>Ticket #@Model.Ticket.Id</h2>
+        @if (Model.Ticket.IsOverdue)
+        {
+            <span class="cst-badge cst-badge-danger">Overdue</span>
+        }
+    </div>
+</div>
+
+@* ── Status Timeline ── *@
+<div class="cst-card">
+    <div class="cst-card-head">
+        <span class="cst-card-title">Service Progress</span>
+    </div>
+    <div class="cst-card-body">
+        @if (Model.Ticket.Status == ServiceTicketStatus.Cancelled)
+        {
+            <div class="cst-alert cst-alert-danger" style="margin-bottom:0;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:.1rem;">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                This service ticket has been cancelled.
+            </div>
+        }
+        else
+        {
+            <div class="cst-timeline">
+                @for (int i = 0; i < statuses.Length; i++)
+                {
+                    var s = statuses[i];
+                    var isDone    = i < currentIdx;
+                    var isCurrent = i == currentIdx;
+                    var dotCls    = isDone ? "done" : isCurrent ? "current" : "pending";
+                    <div class="cst-tl-step">
+                        <div class="cst-tl-dot @dotCls">
+                            @if (isDone)
+                            {
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            }
+                            else if (isCurrent)
+                            {
+                                <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="white"/></svg>
+                            }
+                            else
+                            {
+                                <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                            }
+                        </div>
+                        <div class="cst-tl-label @dotCls">@StatusLabel(s)</div>
+                    </div>
+                    @if (i < statuses.Length - 1)
+                    {
+                        <div class="cst-tl-line @(isDone ? "done" : "pending")"></div>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* ── Details + Items ── *@
+<div class="cst-detail-grid">
+
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <span class="cst-card-title">Ticket Details</span>
+        </div>
+        <div class="cst-card-body">
+            <dl class="cst-dl">
+                <div class="cst-dl-row">
+                    <dt>Bike</dt>
+                    <dd>@Model.Ticket.BikeSummary</dd>
+                </div>
+                <div class="cst-dl-row">
+                    <dt>Mechanic</dt>
+                    <dd>@(Model.Ticket.MechanicName ?? "Not yet assigned")</dd>
+                </div>
+                <div class="cst-dl-row">
+                    <dt>Created</dt>
+                    <dd>@Model.Ticket.CreatedAt.ToString("MMM d, yyyy")</dd>
+                </div>
+                <div class="cst-dl-row">
+                    <dt>Est. Completion</dt>
+                    <dd>@(Model.Ticket.EstimatedCompletionDate?.ToString("MMM d, yyyy") ?? "TBD")</dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.Ticket.DiagnosisNotes))
+                {
+                    <div class="cst-dl-row">
+                        <dt>Diagnosis</dt>
+                        <dd>@Model.Ticket.DiagnosisNotes</dd>
+                    </div>
+                }
+            </dl>
+        </div>
+    </div>
+
+    <div class="cst-card">
+        <div class="cst-card-head">
+            <span class="cst-card-title">Service Items</span>
+        </div>
+        <div class="cst-card-body">
+            @if (!Model.Ticket.Items.Any())
+            {
+                <p style="font-size:.8125rem;color:var(--muted);margin:0;">
+                    No items added yet. Your mechanic will add services and parts after diagnosis.
+                </p>
+            }
+            else
+            {
+                <div class="cst-table-wrap">
+                    <table class="cst-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="r">Qty</th>
+                                <th class="r">Unit</th>
+                                <th class="r">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Ticket.Items)
+                            {
+                                <tr>
+                                    <td>@(item.ServiceTypeName ?? item.PartName ?? "—")</td>
+                                    <td class="r">@item.Quantity</td>
+                                    <td class="r">৳@item.UnitPrice.ToString("N2")</td>
+                                    <td class="r bold">৳@item.LineTotal.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="r" style="text-align:right;">Subtotal</td>
+                                <td class="r">৳@Model.Ticket.Items.Sum(i => i.LineTotal).ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap;">
+                    @if (Model.Ticket.HasInvoice)
+                    {
+                        <a asp-controller="Invoice" asp-action="Index" class="cst-btn cst-btn-success cst-btn-sm">View Invoice &rarr;</a>
+                    }
+                    @if (Model.Ticket.Status == ServiceTicketStatus.Delivered)
+                    {
+                        <a asp-controller="Review" asp-action="Create" asp-route-ticketId="@Model.Ticket.Id"
+                           class="cst-btn cst-btn-outline cst-btn-sm">
+                            &#9733; Leave a Review
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@* ── Notes / Communication ── *@
+<div class="cst-card" style="margin-top:1.25rem;">
+    <div class="cst-card-head">
+        <span class="cst-card-title">Notes &amp; Communication</span>
+    </div>
+    <div class="cst-card-body">
+
+        <div class="cst-notes-thread" id="notesThread">
+            @if (!Model.Notes.Any())
+            {
+                <p style="font-size:.8125rem;color:var(--muted);margin:0;text-align:center;padding:1.5rem 0;">
+                    No messages yet. Use this space to ask questions or share updates with your mechanic.
+                </p>
+            }
+            else
+            {
+                @foreach (var note in Model.Notes)
+                {
+                    var isOwn = note.AuthorId == currentUserId;
+                    <div class="cst-msg @(isOwn ? "own" : "")">
+                        <div class="cst-msg-bubble">
+                            <div class="cst-msg-meta">
+                                <span class="cst-msg-author">@note.AuthorName</span>
+                                @if (!isOwn)
+                                {
+                                    <span class="cst-msg-role @(note.AuthorRole == "Mechanic" ? "mechanic" : "customer")">@note.AuthorRole</span>
+                                }
+                                else
+                                {
+                                    <span class="cst-msg-role" style="background:rgba(255,255,255,.2);color:rgba(255,255,255,.85);">You</span>
+                                }
+                            </div>
+                            <div class="cst-msg-text">@note.Message</div>
+                            <div class="cst-msg-time">@note.CreatedAt.ToString("MMM d, h:mm tt")</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        @if (Model.Ticket.Status != ServiceTicketStatus.Delivered && Model.Ticket.Status != ServiceTicketStatus.Cancelled)
+        {
+            <form asp-action="AddNote" asp-route-id="@Model.Ticket.Id" method="post" class="cst-note-form">
+                @Html.AntiForgeryToken()
+                <input type="text" name="message" class="cst-note-input"
+                       placeholder="Type a message…" maxlength="1000" required autocomplete="off" />
+                <button type="submit" class="cst-btn cst-btn-primary">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                    Send
+                </button>
+            </form>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var thread = document.getElementById('notesThread');
+        if (thread) thread.scrollTop = thread.scrollHeight;
+    </script>
+}
