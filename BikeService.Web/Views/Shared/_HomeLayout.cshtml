@@ -19,6 +19,8 @@
         }
         /* Remove default Bootstrap container margin on this layout */
         body > main { margin: 0; padding: 0; }
+        /* Fixed nav so the hero slides underneath it, enabling the transparent-over-dark-hero effect */
+        #siteNav { position: fixed; width: 100%; }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
