@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/Mechanic/[action]/{id?}")]
+    [Route("Admin/Mechanic")]
     public class AdminMechanicController : Controller
     {
         private readonly IMechanicService _mechanicService;
@@ -18,6 +18,7 @@ namespace BikeService.Web.Controllers.Admin
             _mechanicService = mechanicService;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var result = await _mechanicService.GetAllAsync();
@@ -29,9 +30,10 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
+        [HttpGet("Create")]
         public IActionResult Create() => View(new MechanicFormViewModel());
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(MechanicFormViewModel vm)
         {
@@ -52,6 +54,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var result = await _mechanicService.GetByIdAsync(id);
@@ -63,7 +66,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(MechanicViewModelMapper.ToViewModel(result.Data!));
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, MechanicFormViewModel vm)
         {
@@ -84,7 +87,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Toggle/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
@@ -97,7 +100,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("CreateLogin/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateLogin(int id, string email, string password, string confirmPassword)
         {
@@ -122,7 +125,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Edit), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("ToggleLogin/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleLogin(int id)
         {
@@ -135,7 +138,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Edit), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class AuditLogController : Controller
     {
         private readonly IAuditLogService _auditLogService;
@@ -18,7 +18,7 @@ namespace BikeService.Web.Controllers.Admin
             _auditLogService = auditLogService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index(
             string? entityName,
             string? action,

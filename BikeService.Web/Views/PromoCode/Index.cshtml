@@ -1,137 +1,142 @@
 @model List<BikeService.Application.DTOs.PromoCode.PromoCodeDto>
 @{
-    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
     ViewData["Title"] = "Promo Codes";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-semibold">Promo Codes</h4>
-    <a asp-controller="PromoCode" asp-action="Create" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Add Promo Code
+<div class="adm-page-head">
+    <div>
+        <h1 class="adm-page-head-title">Promo Codes</h1>
+        <p class="adm-page-head-sub">Create and manage discount codes for customers</p>
+    </div>
+    <a asp-controller="PromoCode" asp-action="Create" class="adm-btn adm-btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="margin-right:.375rem;vertical-align:-.1em;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Add Promo Code
     </a>
 </div>
 
-@Html.AntiForgeryToken()
-
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5 text-muted">
-                <p class="mb-0">No promo codes found. <a asp-controller="PromoCode" asp-action="Create">Add one now.</a></p>
+@if (!Model.Any())
+{
+    <div class="adm-card">
+        <div class="adm-card-body">
+            <div class="adm-empty">
+                <div class="adm-empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+                    </svg>
+                </div>
+                <p class="adm-empty-title">No promo codes yet</p>
+                <p class="adm-empty-sub">Create a discount code to offer promotions to your customers.</p>
+                <a asp-controller="PromoCode" asp-action="Create" class="adm-btn adm-btn-primary" style="margin-top:1rem;">Create First Code</a>
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+        </div>
+    </div>
+}
+else
+{
+    <div class="adm-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Code</th>
+                        <th>Discount</th>
+                        <th>Usages</th>
+                        <th>Expires</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
                         <tr>
-                            <th>#</th>
-                            <th>Code</th>
-                            <th>Discount</th>
-                            <th>Usages</th>
-                            <th>Expires</th>
-                            <th>Status</th>
-                            <th>Created</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@item.Id</td>
-                                <td>
-                                    <span class="badge bg-dark font-monospace fs-6">@item.Code</span>
-                                </td>
-                                <td>@item.DiscountPercent%</td>
-                                <td>
-                                    @item.UsageCount / @item.MaxUsages
-                                    <span class="text-muted small ms-1">(@item.RemainingUsages left)</span>
-                                </td>
-                                <td>
-                                    @if (item.ExpiresAt.HasValue)
+                            <td style="color:var(--muted);font-size:.8125rem;">@item.Id</td>
+                            <td>
+                                <span style="font-family:monospace;font-weight:700;background:var(--hover);padding:.1rem .5rem;border-radius:4px;font-size:.875rem;">@item.Code</span>
+                            </td>
+                            <td>@item.DiscountPercent%</td>
+                            <td>
+                                @item.UsageCount / @item.MaxUsages
+                                <span style="color:var(--muted);font-size:.8rem;margin-left:.25rem;">(@item.RemainingUsages left)</span>
+                            </td>
+                            <td>
+                                @if (item.ExpiresAt.HasValue)
+                                {
+                                    if (item.IsExpired)
                                     {
-                                        if (item.IsExpired)
-                                        {
-                                            <span class="badge bg-danger">Expired @item.ExpiresAt.Value.ToString("MMM dd, yyyy")</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted small">@item.ExpiresAt.Value.ToString("MMM dd, yyyy")</span>
-                                        }
+                                        <span class="adm-badge danger">Expired @item.ExpiresAt.Value.ToString("MMM dd, yyyy")</span>
                                     }
                                     else
                                     {
-                                        <span class="text-muted small">No expiry</span>
+                                        <span style="color:var(--muted);font-size:.8125rem;">@item.ExpiresAt.Value.ToString("MMM dd, yyyy")</span>
                                     }
-                                </td>
-                                <td>
-                                    @if (item.IsExpired)
-                                    {
-                                        <span class="badge bg-danger">Expired</span>
-                                    }
-                                    else if (item.IsActive)
-                                    {
-                                        <span class="badge bg-success">Active</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    }
-                                </td>
-                                <td class="text-muted small">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
-                                <td class="text-end">
+                                }
+                                else
+                                {
+                                    <span style="color:var(--muted);font-size:.8125rem;">No expiry</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsExpired)
+                                {
+                                    <span class="adm-badge danger">Expired</span>
+                                }
+                                else if (item.IsActive)
+                                {
+                                    <span class="adm-badge success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="adm-badge neutral">Inactive</span>
+                                }
+                            </td>
+                            <td style="color:var(--muted);font-size:.8125rem;">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex;gap:.375rem;">
                                     <a asp-controller="PromoCode" asp-action="Edit" asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                                       class="adm-btn adm-btn-secondary adm-btn-sm">Edit</a>
 
-                                    <form asp-controller="PromoCode" asp-action="Toggle" asp-route-id="@item.Id"
-                                          method="post" class="d-inline">
+                                    <form asp-controller="PromoCode" asp-action="Toggle" asp-route-id="@item.Id" method="post" style="display:inline;">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success") me-1">
+                                        <button type="submit" class="adm-btn adm-btn-sm @(item.IsActive ? "adm-btn-secondary" : "adm-btn-primary")">
                                             @(item.IsActive ? "Deactivate" : "Activate")
                                         </button>
                                     </form>
 
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmDelete('@Url.Action("Delete", "AdminPromoCode", new { id = item.Id })')">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+                                    <form asp-controller="PromoCode" asp-action="Delete" asp-route-id="@item.Id" method="post" class="del-form" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="adm-btn adm-btn-danger adm-btn-sm del-btn" data-name="@item.Code">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
+}
 
 @section Scripts {
 <script>
-function confirmDelete(url) {
-    Swal.fire({
-        title: 'Delete Promo Code?',
-        text: 'This cannot be undone.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Delete'
-    }).then(r => {
-        if (r.isConfirmed) {
-            var f = document.createElement('form');
-            f.method = 'POST';
-            f.action = url;
-            var t = document.createElement('input');
-            t.type = 'hidden';
-            t.name = '__RequestVerificationToken';
-            t.value = document.querySelector('input[name=__RequestVerificationToken]')?.value || '';
-            f.appendChild(t);
-            document.body.appendChild(f);
-            f.submit();
-        }
+document.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const name = this.dataset.name;
+        const form = this.closest('.del-form');
+        Swal.fire({
+            title: 'Delete promo code?',
+            html: `Code <strong>${name}</strong> will be permanently deleted.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            confirmButtonText: 'Delete'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     });
-}
+});
 </script>
 }

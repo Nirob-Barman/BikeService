@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class PayrollController : Controller
     {
         private readonly IPayrollService  _payrollService;
@@ -21,6 +21,7 @@ namespace BikeService.Web.Controllers.Admin
             _mechanicService = mechanicService;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index(int? year)
         {
             var result = await _payrollService.GetAllAsync(year);
@@ -35,6 +36,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
+        [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
             var result = await _payrollService.GetByIdAsync(id);
@@ -46,13 +48,14 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
+        [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
             await PopulateMechanicsAsync();
             return View(new PayrollRecordFormViewModel { Year = DateTime.Today.Year, Month = DateTime.Today.Month });
         }
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PayrollRecordFormViewModel vm)
         {
@@ -85,6 +88,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id = result.Data });
         }
 
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var result = await _payrollService.GetByIdAsync(id);
@@ -111,7 +115,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, PayrollRecordFormViewModel vm)
         {
@@ -148,7 +152,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Finalize/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Finalize(int id)
         {
@@ -161,7 +165,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("MarkPaid/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkPaid(int id)
         {
@@ -174,7 +178,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {

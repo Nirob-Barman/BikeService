@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/Invoice/[action]/{id?}")]
+    [Route("Admin/Invoice")]
     public class AdminInvoiceController : Controller
     {
         private readonly IInvoiceService _invoiceService;
@@ -21,7 +21,7 @@ namespace BikeService.Web.Controllers.Admin
             _pdfService     = pdfService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index(InvoiceStatus? status)
         {
             var result = await _invoiceService.GetAllAsync(new InvoiceFilterDto { Status = status });
@@ -35,7 +35,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpGet]
+        [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
             var result = await _invoiceService.GetByIdAsync(id);
@@ -47,7 +47,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpGet]
+        [HttpGet("Download/{id}")]
         public async Task<IActionResult> Download(int id)
         {
             var result = await _invoiceService.GetByIdAsync(id);
@@ -60,7 +60,7 @@ namespace BikeService.Web.Controllers.Admin
             return File(pdf, "application/pdf", $"Invoice-{id}.pdf");
         }
 
-        [HttpPost]
+        [HttpPost("Issue/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Issue(int id)
         {
@@ -73,7 +73,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Void/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Void(int id)
         {

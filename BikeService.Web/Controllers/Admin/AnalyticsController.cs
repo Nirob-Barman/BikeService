@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class AnalyticsController : Controller
     {
         private readonly IDashboardService _dashboardService;
@@ -16,7 +16,7 @@ namespace BikeService.Web.Controllers.Admin
             _dashboardService = dashboardService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var result = await _dashboardService.GetDashboardAsync();

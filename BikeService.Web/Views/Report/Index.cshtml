@@ -1,35 +1,45 @@
 @model BikeService.Web.ViewModels.Report.ReportViewModel
 @{
     ViewData["Title"] = "Reports & Export";
-    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-semibold">Reports &amp; Export</h4>
+<div class="adm-page-head">
+    <div>
+        <h1 class="adm-page-head-title">Reports &amp; Export</h1>
+        <p class="adm-page-head-sub">Revenue, tickets, and parts usage by date range</p>
+    </div>
 </div>
 
-@* Filter Form *@
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-4">
-        <form method="post" class="row g-3 align-items-end">
+@* ── Filter ── *@
+<div class="adm-card" style="margin-bottom:1.25rem;">
+    <div class="adm-card-head">
+        <span class="adm-card-title">Date Range</span>
+    </div>
+    <div class="adm-card-body">
+        <form method="post" style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;">
             @Html.AntiForgeryToken()
-            <div class="col-md-4">
-                <label class="form-label fw-medium">From</label>
-                <input type="date" name="dateFrom" class="form-control"
+            <div style="flex:1;min-width:150px;">
+                <label class="adm-label">From</label>
+                <input type="date" name="dateFrom" class="adm-input"
                        value="@Model.DateFrom.ToString("yyyy-MM-dd")" required />
             </div>
-            <div class="col-md-4">
-                <label class="form-label fw-medium">To</label>
-                <input type="date" name="dateTo" class="form-control"
+            <div style="flex:1;min-width:150px;">
+                <label class="adm-label">To</label>
+                <input type="date" name="dateTo" class="adm-input"
                        value="@Model.DateTo.ToString("yyyy-MM-dd")" required />
             </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+            <div>
+                <button type="submit" class="adm-btn adm-btn-primary">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    Generate Report
+                </button>
             </div>
         </form>
         @if (!ViewData.ModelState.IsValid)
         {
-            <div class="alert alert-danger mt-3 mb-0">
+            <div class="adm-alert danger" style="margin-top:1rem;margin-bottom:0;">
                 @Html.ValidationSummary(false)
             </div>
         }
@@ -41,238 +51,250 @@
     var df = Model.DateFrom.ToString("yyyy-MM-dd");
     var dt = Model.DateTo.ToString("yyyy-MM-dd");
 
-    @* ── Revenue ────────────────────────────────────────────── *@
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <h6 class="fw-semibold mb-0">Revenue Report</h6>
+    @* ── Revenue ── *@
+    <div class="adm-card" style="margin-bottom:1.25rem;">
+        <div class="adm-card-head">
+            <span class="adm-card-title">Revenue Report</span>
             <a asp-action="ExportInvoices" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
-               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+               class="adm-btn adm-btn-secondary adm-btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export CSV
+            </a>
         </div>
-        <div class="card-body p-4">
+        <div class="adm-card-body">
 
-            @* KPI cards *@
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-3">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Total Revenue</div>
-                        <div class="fw-bold fs-5 text-primary">৳@Model.Revenue!.TotalRevenue.ToString("N2")</div>
-                    </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Total Revenue</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--p);">৳@Model.Revenue!.TotalRevenue.ToString("N2")</div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Tax Collected</div>
-                        <div class="fw-bold fs-5">৳@Model.Revenue.TotalTax.ToString("N2")</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Tax Collected</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;">৳@Model.Revenue.TotalTax.ToString("N2")</div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Discounts Given</div>
-                        <div class="fw-bold fs-5 text-success">৳@Model.Revenue.TotalDiscount.ToString("N2")</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Discounts Given</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--success);">৳@Model.Revenue.TotalDiscount.ToString("N2")</div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Paid Invoices</div>
-                        <div class="fw-bold fs-5">@Model.Revenue.InvoiceCount</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Paid Invoices</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;">@Model.Revenue.InvoiceCount</div>
                 </div>
             </div>
 
-            <div class="row g-4">
-                @* By Service *@
-                <div class="col-md-6">
-                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Service Type</h6>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                <div>
+                    <div style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--label);margin-bottom:.75rem;">By Service Type</div>
                     @if (!Model.Revenue.ByService.Any())
                     {
-                        <p class="text-muted small">No data.</p>
+                        <p style="color:var(--muted);font-size:.8375rem;margin:0;">No data.</p>
                     }
                     else
                     {
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr><th>Service</th><th class="text-end">Qty</th><th class="text-end">Revenue</th></tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in Model.Revenue.ByService)
-                                {
-                                    <tr>
-                                        <td>@row.ServiceName</td>
-                                        <td class="text-end">@row.Quantity</td>
-                                        <td class="text-end fw-medium">৳@row.Revenue.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <div class="adm-table-wrap">
+                            <table class="adm-table">
+                                <thead>
+                                    <tr><th>Service</th><th>Qty</th><th style="text-align:right;">Revenue</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Model.Revenue.ByService)
+                                    {
+                                        <tr>
+                                            <td>@row.ServiceName</td>
+                                            <td>@row.Quantity</td>
+                                            <td style="text-align:right;font-weight:600;">৳@row.Revenue.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
-
-                @* By Mechanic *@
-                <div class="col-md-6">
-                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Mechanic</h6>
+                <div>
+                    <div style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--label);margin-bottom:.75rem;">By Mechanic</div>
                     @if (!Model.Revenue.ByMechanic.Any())
                     {
-                        <p class="text-muted small">No data.</p>
+                        <p style="color:var(--muted);font-size:.8375rem;margin:0;">No data.</p>
                     }
                     else
                     {
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr><th>Mechanic</th><th class="text-end">Tickets</th><th class="text-end">Revenue</th></tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in Model.Revenue.ByMechanic)
-                                {
-                                    <tr>
-                                        <td>@row.MechanicName</td>
-                                        <td class="text-end">@row.TicketsDelivered</td>
-                                        <td class="text-end fw-medium">৳@row.Revenue.ToString("N2")</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <div class="adm-table-wrap">
+                            <table class="adm-table">
+                                <thead>
+                                    <tr><th>Mechanic</th><th>Tickets</th><th style="text-align:right;">Revenue</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Model.Revenue.ByMechanic)
+                                    {
+                                        <tr>
+                                            <td>@row.MechanicName</td>
+                                            <td>@row.TicketsDelivered</td>
+                                            <td style="text-align:right;font-weight:600;">৳@row.Revenue.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    @* ── Tickets ─────────────────────────────────────────────── *@
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <h6 class="fw-semibold mb-0">Ticket Report</h6>
+    @* ── Tickets ── *@
+    <div class="adm-card" style="margin-bottom:1.25rem;">
+        <div class="adm-card-head">
+            <span class="adm-card-title">Ticket Report</span>
             <a asp-action="ExportTickets" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
-               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+               class="adm-btn adm-btn-secondary adm-btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export CSV
+            </a>
         </div>
-        <div class="card-body p-4">
+        <div class="adm-card-body">
 
-            <div class="row g-3 mb-4">
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Total</div>
-                        <div class="fw-bold fs-5">@Model.Tickets!.Total</div>
-                    </div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.5rem;">
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Total</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;">@Model.Tickets!.Total</div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Delivered</div>
-                        <div class="fw-bold fs-5 text-success">@Model.Tickets.Delivered</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Delivered</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--success);">@Model.Tickets.Delivered</div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Active</div>
-                        <div class="fw-bold fs-5 text-primary">@Model.Tickets.Active</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Active</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--p);">@Model.Tickets.Active</div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Cancelled</div>
-                        <div class="fw-bold fs-5 text-secondary">@Model.Tickets.Cancelled</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Cancelled</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--muted);">@Model.Tickets.Cancelled</div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Overdue</div>
-                        <div class="fw-bold fs-5 text-danger">@Model.Tickets.Overdue</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Overdue</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;color:var(--danger);">@Model.Tickets.Overdue</div>
                 </div>
-                <div class="col-6 col-md-2">
-                    <div class="bg-light rounded-3 p-3 text-center">
-                        <div class="small text-muted">Avg Days</div>
-                        <div class="fw-bold fs-5">@Model.Tickets.AvgCompletionDays</div>
-                    </div>
+                <div class="adm-kpi">
+                    <div class="adm-kpi-label">Avg Days</div>
+                    <div class="adm-kpi-value" style="font-size:1.25rem;">@Model.Tickets.AvgCompletionDays</div>
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-5">
-                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Status</h6>
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light"><tr><th>Status</th><th class="text-end">Count</th></tr></thead>
-                        <tbody>
-                            @foreach (var row in Model.Tickets.ByStatus)
-                            {
-                                <tr>
-                                    <td>@row.Status</td>
-                                    <td class="text-end">@row.Count</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+            <div style="display:grid;grid-template-columns:5fr 7fr;gap:1.5rem;">
+                <div>
+                    <div style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--label);margin-bottom:.75rem;">By Status</div>
+                    <div class="adm-table-wrap">
+                        <table class="adm-table">
+                            <thead>
+                                <tr><th>Status</th><th style="text-align:right;">Count</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in Model.Tickets.ByStatus)
+                                {
+                                    <tr>
+                                        <td>@row.Status</td>
+                                        <td style="text-align:right;">@row.Count</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="col-md-7">
-                    <h6 class="fw-medium mb-2 small text-muted text-uppercase">By Mechanic</h6>
+                <div>
+                    <div style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--label);margin-bottom:.75rem;">By Mechanic</div>
                     @if (!Model.Tickets.ByMechanic.Any())
                     {
-                        <p class="text-muted small">No mechanic data.</p>
+                        <p style="color:var(--muted);font-size:.8375rem;margin:0;">No mechanic data.</p>
                     }
                     else
                     {
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr><th>Mechanic</th><th class="text-end">Total</th><th class="text-end">Delivered</th></tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var row in Model.Tickets.ByMechanic)
-                                {
-                                    <tr>
-                                        <td>@row.MechanicName</td>
-                                        <td class="text-end">@row.Total</td>
-                                        <td class="text-end text-success fw-medium">@row.Delivered</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <div class="adm-table-wrap">
+                            <table class="adm-table">
+                                <thead>
+                                    <tr><th>Mechanic</th><th style="text-align:right;">Total</th><th style="text-align:right;">Delivered</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Model.Tickets.ByMechanic)
+                                    {
+                                        <tr>
+                                            <td>@row.MechanicName</td>
+                                            <td style="text-align:right;">@row.Total</td>
+                                            <td style="text-align:right;color:var(--success);font-weight:600;">@row.Delivered</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    @* ── Parts Usage ──────────────────────────────────────────── *@
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-            <h6 class="fw-semibold mb-0">Parts Usage</h6>
+    @* ── Parts Usage ── *@
+    <div class="adm-card">
+        <div class="adm-card-head">
+            <span class="adm-card-title">Parts Usage</span>
             <a asp-action="ExportParts" asp-route-dateFrom="@df" asp-route-dateTo="@dt"
-               class="btn btn-outline-secondary btn-sm">&#8681; Export CSV</a>
+               class="adm-btn adm-btn-secondary adm-btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export CSV
+            </a>
         </div>
-        <div class="card-body p-4">
-            @if (!Model.PartUsage.Any())
-            {
-                <p class="text-muted small mb-0">No parts used in this period.</p>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Part</th>
-                                <th>SKU</th>
-                                <th class="text-end">Times Used</th>
-                                <th class="text-end">Total Qty</th>
-                                <th class="text-end">Total Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in Model.PartUsage)
-                            {
-                                <tr>
-                                    <td>@row.PartName</td>
-                                    <td class="text-muted small">@row.SKU</td>
-                                    <td class="text-end">@row.TimesUsed</td>
-                                    <td class="text-end">@row.TotalQuantity</td>
-                                    <td class="text-end fw-medium">৳@row.TotalValue.ToString("N2")</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+        @if (!Model.PartUsage.Any())
+        {
+            <div class="adm-empty">
+                <div class="adm-empty-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
+                    </svg>
                 </div>
-            }
-        </div>
+                <p class="adm-empty-sub">No parts used in this period.</p>
+            </div>
+        }
+        else
+        {
+            <div class="adm-table-wrap">
+                <table class="adm-table">
+                    <thead>
+                        <tr>
+                            <th>Part</th>
+                            <th>SKU</th>
+                            <th style="text-align:right;">Times Used</th>
+                            <th style="text-align:right;">Total Qty</th>
+                            <th style="text-align:right;">Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.PartUsage)
+                        {
+                            <tr>
+                                <td style="font-weight:500;">@row.PartName</td>
+                                <td style="color:var(--muted);">@row.SKU</td>
+                                <td style="text-align:right;">@row.TimesUsed</td>
+                                <td style="text-align:right;">@row.TotalQuantity</td>
+                                <td style="text-align:right;font-weight:600;">৳@row.TotalValue.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
 }
 else if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    <div class="adm-alert danger">@TempData["Error"]</div>
 }

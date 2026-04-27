@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/Appointment/[action]/{id?}")]
+    [Route("Admin/Appointment")]
     public class AdminAppointmentController : Controller
     {
         private readonly IAppointmentService _appointmentService;
@@ -21,7 +21,7 @@ namespace BikeService.Web.Controllers.Admin
             _ticketService      = ticketService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index(AppointmentStatus? status, DateTime? dateFrom, DateTime? dateTo)
         {
             var filter = new AppointmentFilterDto { Status = status, DateFrom = dateFrom, DateTo = dateTo };
@@ -38,7 +38,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpGet]
+        [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
             var result = await _appointmentService.GetByIdAsync(id);
@@ -50,7 +50,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpPost]
+        [HttpPost("Confirm/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(int id)
         {
@@ -63,7 +63,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Cancel/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int id)
         {
@@ -76,7 +76,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("CreateTicket/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateTicket(int id)
         {

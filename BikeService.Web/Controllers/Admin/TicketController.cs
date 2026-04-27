@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class TicketController : Controller
     {
         private readonly IServiceTicketService _ticketService;
@@ -36,7 +36,7 @@ namespace BikeService.Web.Controllers.Admin
             _bikeService        = bikeService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index(ServiceTicketStatus? status, int? mechanicId, DateTime? dateFrom, DateTime? dateTo)
         {
             var filter = new TicketFilterDto { Status = status, MechanicId = mechanicId, DateFrom = dateFrom, DateTo = dateTo };
@@ -57,7 +57,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpGet]
+        [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
             var ticketResult = await _ticketService.GetByIdAsync(id);
@@ -80,14 +80,14 @@ namespace BikeService.Web.Controllers.Admin
             });
         }
 
-        [HttpGet]
+        [HttpGet("Create")]
         public async Task<IActionResult> Create()
         {
             await PopulateCreateDropdowns();
             return View(new WalkInTicketFormViewModel { EstimatedCompletionDate = DateTime.Today.AddDays(3) });
         }
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(WalkInTicketFormViewModel vm)
         {
@@ -117,6 +117,97 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id = result.Data });
         }
 
+        [HttpPost("UpdateStatus/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int id, ServiceTicketStatus newStatus)
+        {
+            var result = await _ticketService.UpdateStatusAsync(id, newStatus);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update status.";
+            else
+                TempData["Success"] = "Ticket status updated.";
+
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        [HttpPost("AssignMechanic/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignMechanic(int id, int mechanicId)
+        {
+            var result = await _ticketService.AssignMechanicAsync(id, mechanicId);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to assign mechanic.";
+            else
+                TempData["Success"] = "Mechanic assigned successfully.";
+
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        [HttpPost("UpdateDiagnosis/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateDiagnosis(int id, string? diagnosisNotes, DateTime? estimatedCompletionDate)
+        {
+            var result = await _ticketService.UpdateDiagnosisAsync(id, diagnosisNotes, estimatedCompletionDate);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update diagnosis.";
+            else
+                TempData["Success"] = "Diagnosis notes saved.";
+
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        [HttpPost("AddItem")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddItem(int ticketId, ServiceTicketItemFormDto dto)
+        {
+            var result = await _ticketService.AddItemAsync(ticketId, dto);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add item.";
+            else
+                TempData["Success"] = "Item added to ticket.";
+
+            return RedirectToAction(nameof(Detail), new { id = ticketId });
+        }
+
+        [HttpPost("RemoveItem")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveItem(int itemId, int ticketId)
+        {
+            var result = await _ticketService.RemoveItemAsync(itemId);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to remove item.";
+            else
+                TempData["Success"] = "Item removed from ticket.";
+
+            return RedirectToAction(nameof(Detail), new { id = ticketId });
+        }
+
+        [HttpPost("Cancel/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var result = await _ticketService.CancelAsync(id);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to cancel ticket.";
+            else
+                TempData["Success"] = "Ticket cancelled.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost("GenerateInvoice/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateInvoice(int id)
+        {
+            var result = await _invoiceService.GenerateAsync(id);
+            if (!result.Success)
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to generate invoice.";
+            else
+                TempData["Success"] = "Invoice generated successfully.";
+
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
         private async Task PopulateCreateDropdowns()
         {
             var bikes     = await _bikeService.GetAllAsync();
@@ -131,97 +222,6 @@ namespace BikeService.Web.Controllers.Admin
                 "Id", "Label");
 
             ViewBag.Mechanics = new SelectList(mechanics.Data ?? [], "Id", "FullName");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(int id, ServiceTicketStatus newStatus)
-        {
-            var result = await _ticketService.UpdateStatusAsync(id, newStatus);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update status.";
-            else
-                TempData["Success"] = "Ticket status updated.";
-
-            return RedirectToAction(nameof(Detail), new { id });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignMechanic(int id, int mechanicId)
-        {
-            var result = await _ticketService.AssignMechanicAsync(id, mechanicId);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to assign mechanic.";
-            else
-                TempData["Success"] = "Mechanic assigned successfully.";
-
-            return RedirectToAction(nameof(Detail), new { id });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateDiagnosis(int id, string? diagnosisNotes, DateTime? estimatedCompletionDate)
-        {
-            var result = await _ticketService.UpdateDiagnosisAsync(id, diagnosisNotes, estimatedCompletionDate);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update diagnosis.";
-            else
-                TempData["Success"] = "Diagnosis notes saved.";
-
-            return RedirectToAction(nameof(Detail), new { id });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddItem(int ticketId, ServiceTicketItemFormDto dto)
-        {
-            var result = await _ticketService.AddItemAsync(ticketId, dto);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add item.";
-            else
-                TempData["Success"] = "Item added to ticket.";
-
-            return RedirectToAction(nameof(Detail), new { id = ticketId });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveItem(int itemId, int ticketId)
-        {
-            var result = await _ticketService.RemoveItemAsync(itemId);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to remove item.";
-            else
-                TempData["Success"] = "Item removed from ticket.";
-
-            return RedirectToAction(nameof(Detail), new { id = ticketId });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Cancel(int id)
-        {
-            var result = await _ticketService.CancelAsync(id);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to cancel ticket.";
-            else
-                TempData["Success"] = "Ticket cancelled.";
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateInvoice(int id)
-        {
-            var result = await _invoiceService.GenerateAsync(id);
-            if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to generate invoice.";
-            else
-                TempData["Success"] = "Invoice generated successfully.";
-
-            return RedirectToAction(nameof(Detail), new { id });
         }
     }
 }

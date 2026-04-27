@@ -2,31 +2,31 @@
 @using BikeService.Domain.Enums
 @model List<InvoiceDto>
 @{
-    Layout = "~/Views/Shared/Admin/_AdminLayout.cshtml";
     ViewData["Title"] = "Invoices";
 
-    string GetStatusColor(InvoiceStatus s) => s switch
+    string GetStatusBadge(InvoiceStatus s) => s switch
     {
-        InvoiceStatus.Draft => "secondary",
+        InvoiceStatus.Draft  => "neutral",
         InvoiceStatus.Issued => "primary",
-        InvoiceStatus.Paid => "success",
-        InvoiceStatus.Void => "danger",
-        _ => "secondary"
+        InvoiceStatus.Paid   => "success",
+        InvoiceStatus.Void   => "danger",
+        _ => "neutral"
     };
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-semibold">Invoices</h4>
-    <span class="text-muted small">@Model.Count result(s)</span>
+<div class="adm-page-head">
+    <div>
+        <h1 class="adm-page-head-title">Invoices</h1>
+        <p class="adm-page-head-sub">@Model.Count result(s)</p>
+    </div>
 </div>
 
-<!-- Filter -->
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label small fw-medium">Status</label>
-                <select name="status" class="form-select form-select-sm">
+<div class="adm-card" style="margin-bottom:1rem;">
+    <div class="adm-card-body" style="padding:.875rem 1.25rem;">
+        <form method="get" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+            <div>
+                <label class="adm-label">Status</label>
+                <select name="status" class="adm-input adm-select" style="width:160px;">
                     <option value="">All Statuses</option>
                     @foreach (InvoiceStatus s in Enum.GetValues(typeof(InvoiceStatus)))
                     {
@@ -34,62 +34,75 @@
                     }
                 </select>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">Reset</a>
+            <div style="display:flex;gap:.5rem;align-items:flex-end;">
+                <button type="submit" class="adm-btn adm-btn-primary adm-btn-sm">Filter</button>
+                <a href="@Url.Action("Index")" class="adm-btn adm-btn-secondary adm-btn-sm">Reset</a>
             </div>
         </form>
     </div>
 </div>
 
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+@if (!Model.Any())
+{
+    <div class="adm-card">
+        <div class="adm-card-body">
+            <div class="adm-empty">
+                <div class="adm-empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                </div>
+                <p class="adm-empty-title">No invoices found</p>
+                <p class="adm-empty-sub">Invoices are generated from completed service tickets. Try adjusting your filter.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="adm-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead>
                     <tr>
                         <th>#ID</th>
                         <th>Ticket</th>
                         <th>Bike</th>
-                        <th>Total</th>
+                        <th style="text-align:right;">Total</th>
                         <th>Status</th>
                         <th>Created</th>
-                        <th class="text-end">Actions</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.Any())
-                    {
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No invoices found.</td>
-                        </tr>
-                    }
                     @foreach (var invoice in Model)
                     {
                         <tr>
-                            <td class="text-muted small">#@invoice.Id</td>
-                            <td class="text-muted">#@invoice.ServiceTicketId</td>
-                            <td class="fw-medium">@invoice.BikeSummary</td>
-                            <td class="fw-semibold">$@invoice.FinalAmount.ToString("0.00")</td>
-                            <td><span class="badge bg-@GetStatusColor(invoice.Status)">@invoice.StatusLabel</span></td>
-                            <td class="text-muted small">@invoice.CreatedAt.ToString("MMM dd, yyyy")</td>
-                            <td class="text-end">
-                                <a href="@Url.Action("Detail", new { id = invoice.Id })" class="btn btn-sm btn-outline-primary">Detail</a>
-                                @if (invoice.Status == InvoiceStatus.Draft)
-                                {
-                                    <form method="post" asp-action="Issue" asp-route-id="@invoice.Id" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-success ms-1">Issue</button>
-                                    </form>
-                                }
-                                @if (invoice.Status == InvoiceStatus.Draft || invoice.Status == InvoiceStatus.Issued)
-                                {
-                                    <form method="post" asp-action="Void" asp-route-id="@invoice.Id" class="d-inline"
-                                          onsubmit="return confirm('Void invoice #@invoice.Id?')">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1">Void</button>
-                                    </form>
-                                }
+                            <td style="color:var(--muted);font-size:.8125rem;">#@invoice.Id</td>
+                            <td style="color:var(--muted);">#@invoice.ServiceTicketId</td>
+                            <td style="font-weight:500;">@invoice.BikeSummary</td>
+                            <td style="text-align:right;font-weight:600;">৳@invoice.FinalAmount.ToString("0.00")</td>
+                            <td><span class="adm-badge @GetStatusBadge(invoice.Status)">@invoice.StatusLabel</span></td>
+                            <td style="color:var(--muted);font-size:.8125rem;white-space:nowrap;">@invoice.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex;gap:.375rem;">
+                                    <a href="@Url.Action("Detail", new { id = invoice.Id })" class="adm-btn adm-btn-secondary adm-btn-sm">Detail</a>
+                                    @if (invoice.Status == InvoiceStatus.Draft)
+                                    {
+                                        <form method="post" asp-action="Issue" asp-route-id="@invoice.Id" style="display:inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="adm-btn adm-btn-primary adm-btn-sm">Issue</button>
+                                        </form>
+                                    }
+                                    @if (invoice.Status == InvoiceStatus.Draft || invoice.Status == InvoiceStatus.Issued)
+                                    {
+                                        <form method="post" asp-action="Void" asp-route-id="@invoice.Id" style="display:inline;"
+                                              onsubmit="return confirm('Void invoice #@invoice.Id?')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="adm-btn adm-btn-danger adm-btn-sm">Void</button>
+                                        </form>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -97,4 +110,4 @@
             </table>
         </div>
     </div>
-</div>
+}

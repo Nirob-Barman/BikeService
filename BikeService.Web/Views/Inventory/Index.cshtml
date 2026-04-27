@@ -4,117 +4,118 @@
     int unresolvedAlerts = ViewBag.UnresolvedAlertCount ?? 0;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-semibold">Parts Inventory</h4>
-    <div class="d-flex gap-2">
-        <a asp-controller="Inventory" asp-action="StockAlerts" class="btn btn-outline-warning position-relative">
+<div class="adm-page-head">
+    <div>
+        <h1 class="adm-page-head-title">Parts Inventory</h1>
+        <p class="adm-page-head-sub">Track parts stock, prices, and low-stock alerts</p>
+    </div>
+    <div style="display:flex;gap:.5rem;">
+        <a asp-controller="Inventory" asp-action="StockAlerts" class="adm-btn adm-btn-secondary" style="position:relative;">
             Stock Alerts
             @if (unresolvedAlerts > 0)
             {
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                    @unresolvedAlerts
-                </span>
+                <span style="position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;min-width:18px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;">@unresolvedAlerts</span>
             }
         </a>
-        <a asp-controller="Inventory" asp-action="BulkImport" class="btn btn-outline-secondary">
-            Bulk Import
-        </a>
-        <a asp-controller="Inventory" asp-action="Create" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Add Part
+        <a asp-controller="Inventory" asp-action="BulkImport" class="adm-btn adm-btn-secondary">Bulk Import</a>
+        <a asp-controller="Inventory" asp-action="Create" class="adm-btn adm-btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="margin-right:.375rem;vertical-align:-.1em;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Part
         </a>
     </div>
 </div>
 
-@Html.AntiForgeryToken()
-
-<div class="card shadow-sm border-0">
-    <div class="card-body p-0">
-        @if (!Model.Any())
-        {
-            <div class="text-center py-5 text-muted">
-                <p class="mb-0">No parts found. <a asp-controller="Inventory" asp-action="Create">Add one now.</a></p>
+@if (!Model.Any())
+{
+    <div class="adm-card">
+        <div class="adm-card-body">
+            <div class="adm-empty">
+                <div class="adm-empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                    </svg>
+                </div>
+                <p class="adm-empty-title">No parts in inventory</p>
+                <p class="adm-empty-sub">Add your first part to start tracking stock and using it on service tickets.</p>
+                <a asp-controller="Inventory" asp-action="Create" class="adm-btn adm-btn-primary" style="margin-top:1rem;">Add First Part</a>
             </div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+        </div>
+    </div>
+}
+else
+{
+    <div class="adm-card">
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Unit Price</th>
+                        <th>Stock</th>
+                        <th>Threshold</th>
+                        <th>Status</th>
+                        <th>Added</th>
+                        <th style="text-align:right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
                         <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>SKU</th>
-                            <th>Unit Price</th>
-                            <th>Stock</th>
-                            <th>Threshold</th>
-                            <th>Status</th>
-                            <th>Added</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@item.Id</td>
-                                <td class="fw-medium">@item.Name</td>
-                                <td><span class="font-monospace text-muted small">@item.SKU</span></td>
-                                <td>$@item.UnitPrice.ToString("0.00")</td>
-                                <td>@item.StockQuantity</td>
-                                <td>@item.LowStockThreshold</td>
-                                <td>
-                                    @if (item.IsLowStock)
-                                    {
-                                        <span class="badge bg-danger">Low Stock</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">In Stock</span>
-                                    }
-                                </td>
-                                <td class="text-muted small">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
-                                <td class="text-end">
+                            <td style="color:var(--muted);font-size:.8125rem;">@item.Id</td>
+                            <td style="font-weight:500;">@item.Name</td>
+                            <td><span style="font-family:monospace;color:var(--muted);font-size:.8125rem;">@item.SKU</span></td>
+                            <td>৳@item.UnitPrice.ToString("0.00")</td>
+                            <td>@item.StockQuantity</td>
+                            <td>@item.LowStockThreshold</td>
+                            <td>
+                                @if (item.IsLowStock)
+                                {
+                                    <span class="adm-badge danger">Low Stock</span>
+                                }
+                                else
+                                {
+                                    <span class="adm-badge success">In Stock</span>
+                                }
+                            </td>
+                            <td style="color:var(--muted);font-size:.8125rem;">@item.CreatedAt.ToString("MMM dd, yyyy")</td>
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex;gap:.375rem;">
                                     <a asp-controller="Inventory" asp-action="Edit" asp-route-id="@item.Id"
-                                       class="btn btn-sm btn-outline-primary me-1">Edit</a>
-
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="confirmDelete('@Url.Action("Delete", "Inventory", new { area = "Admin", id = item.Id })')">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+                                       class="adm-btn adm-btn-secondary adm-btn-sm">Edit</a>
+                                    <form asp-controller="Inventory" asp-action="Delete" asp-route-id="@item.Id" method="post" class="del-form" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="adm-btn adm-btn-danger adm-btn-sm del-btn" data-name="@item.Name">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
+}
 
 @section Scripts {
 <script>
-function confirmDelete(url) {
-    Swal.fire({
-        title: 'Delete Part?',
-        text: 'This cannot be undone.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Delete'
-    }).then(r => {
-        if (r.isConfirmed) {
-            var f = document.createElement('form');
-            f.method = 'POST';
-            f.action = url;
-            var t = document.createElement('input');
-            t.type = 'hidden';
-            t.name = '__RequestVerificationToken';
-            t.value = document.querySelector('input[name=__RequestVerificationToken]')?.value || '';
-            f.appendChild(t);
-            document.body.appendChild(f);
-            f.submit();
-        }
+document.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const name = this.dataset.name;
+        const form = this.closest('.del-form');
+        Swal.fire({
+            title: 'Delete part?',
+            html: `<strong>${name}</strong> will be permanently removed from inventory.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            confirmButtonText: 'Delete'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     });
-}
+});
 </script>
 }

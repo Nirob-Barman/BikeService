@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class CustomerController : Controller
     {
         private readonly ICustomerService _customerService;
@@ -16,7 +16,7 @@ namespace BikeService.Web.Controllers.Admin
             _customerService = customerService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var result = await _customerService.GetAllAsync();
@@ -28,7 +28,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpPost]
+        [HttpPost("Ban/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Ban(string id)
         {
@@ -41,7 +41,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Unban/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unban(string id)
         {

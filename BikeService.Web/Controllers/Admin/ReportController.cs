@@ -8,7 +8,7 @@ using System.Text;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = "Admin")]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class ReportController : Controller
     {
         private readonly IReportService _reportService;
@@ -18,10 +18,10 @@ namespace BikeService.Web.Controllers.Admin
             _reportService = reportService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public IActionResult Index() => View(new ReportViewModel());
 
-        [HttpPost]
+        [HttpPost("")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(DateTime dateFrom, DateTime dateTo)
         {
@@ -46,21 +46,21 @@ namespace BikeService.Web.Controllers.Admin
             });
         }
 
-        [HttpGet]
+        [HttpGet("ExportInvoices")]
         public async Task<IActionResult> ExportInvoices(DateTime dateFrom, DateTime dateTo)
         {
             var csv = await _reportService.ExportInvoicesCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Invoices_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
 
-        [HttpGet]
+        [HttpGet("ExportTickets")]
         public async Task<IActionResult> ExportTickets(DateTime dateFrom, DateTime dateTo)
         {
             var csv = await _reportService.ExportTicketsCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Tickets_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
 
-        [HttpGet]
+        [HttpGet("ExportParts")]
         public async Task<IActionResult> ExportParts(DateTime dateFrom, DateTime dateTo)
         {
             var csv = await _reportService.ExportPartUsageCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });

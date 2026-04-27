@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class LeaveRequestController : Controller
     {
         private readonly ILeaveRequestService _leaveService;
@@ -18,6 +18,7 @@ namespace BikeService.Web.Controllers.Admin
             _mechanicService = mechanicService;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var result = await _leaveService.GetAllAsync();
@@ -29,6 +30,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
+        [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
             var result = await _leaveService.GetByIdAsync(id);
@@ -40,7 +42,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpPost]
+        [HttpPost("Approve/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(int id, string? adminNotes)
         {
@@ -53,7 +55,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        [HttpPost]
+        [HttpPost("Reject/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(int id, string? adminNotes)
         {

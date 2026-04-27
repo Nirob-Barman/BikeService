@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class InventoryController : Controller
     {
         private readonly IPartService _partService;
@@ -20,6 +20,7 @@ namespace BikeService.Web.Controllers.Admin
             _bulkImportService = bulkImportService;
         }
 
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var partsResult = await _partService.GetAllAsync();
@@ -35,9 +36,10 @@ namespace BikeService.Web.Controllers.Admin
             return View(partsResult.Data);
         }
 
+        [HttpGet("Create")]
         public IActionResult Create() => View(new PartFormViewModel());
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PartFormViewModel vm)
         {
@@ -60,6 +62,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var result = await _partService.GetByIdAsync(id);
@@ -71,7 +74,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(PartViewModelMapper.ToViewModel(result.Data!));
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, PartFormViewModel vm)
         {
@@ -93,7 +96,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
@@ -106,6 +109,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet("StockAlerts")]
         public async Task<IActionResult> StockAlerts()
         {
             var result = await _partService.GetStockAlertsAsync(unresolvedOnly: true);
@@ -117,7 +121,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpPost]
+        [HttpPost("ResolveAlert")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResolveAlert(int alertId)
         {
@@ -130,9 +134,10 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(StockAlerts));
         }
 
+        [HttpGet("BulkImport")]
         public IActionResult BulkImport() => View();
 
-        [HttpPost]
+        [HttpPost("BulkImport")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> BulkImport(IFormFile file)
         {

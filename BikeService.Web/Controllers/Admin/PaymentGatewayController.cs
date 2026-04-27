@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BikeService.Web.Controllers.Admin
 {
     [Authorize(Roles = AppRoles.Admin)]
-    [Route("Admin/[controller]/[action]/{id?}")]
+    [Route("Admin/[controller]")]
     public class PaymentGatewayController : Controller
     {
         private readonly IPaymentGatewayService _gatewayService;
@@ -19,7 +19,7 @@ namespace BikeService.Web.Controllers.Admin
             _gatewayService = gatewayService;
         }
 
-        [HttpGet]
+        [HttpGet("")]
         public async Task<IActionResult> Index()
         {
             var result = await _gatewayService.GetAllAsync();
@@ -31,10 +31,10 @@ namespace BikeService.Web.Controllers.Admin
             return View(result.Data);
         }
 
-        [HttpGet]
+        [HttpGet("Create")]
         public IActionResult Create() => View(new PaymentGatewayFormViewModel());
 
-        [HttpPost]
+        [HttpPost("Create")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PaymentGatewayFormViewModel vm)
         {
@@ -51,7 +51,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpGet]
+        [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
             var result = await _gatewayService.GetByIdAsync(id);
@@ -78,7 +78,7 @@ namespace BikeService.Web.Controllers.Admin
             return View(vm);
         }
 
-        [HttpPost]
+        [HttpPost("Edit/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, PaymentGatewayFormViewModel vm)
         {
@@ -95,7 +95,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Toggle/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
@@ -108,7 +108,7 @@ namespace BikeService.Web.Controllers.Admin
             return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
+        [HttpPost("Delete/{id}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
