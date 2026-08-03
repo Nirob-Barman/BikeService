@@ -10,7 +10,7 @@ using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTick
 using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTicketStatus;
 using BikeService.Application.Features.Parts.Queries.GetParts;
 using BikeService.Application.Features.ServiceTickets.Queries.GetAssignedServiceTickets;
-using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Application.Features.ServiceTickets.Queries.GetAssignedServiceTicketById;
 using BikeService.Application.Features.ServiceTypes.Queries.GetActiveServiceTypes;
 using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
 using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
@@ -21,7 +21,6 @@ using BikeService.Web.ViewModels.Mechanic;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using BikeService.Application.DTOs.Payroll;
 
 namespace BikeService.Web.Controllers
@@ -78,25 +77,14 @@ namespace BikeService.Web.Controllers
 
         public async Task<IActionResult> Detail(int id)
         {
-            var result = await _mediator.Send(new GetServiceTicketByIdQuery(id));
+            var result = await _mediator.Send(new GetAssignedServiceTicketByIdQuery(id));
             if (!result.Success)
             {
-                TempData["Error"] = "Ticket not found.";
+                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Ticket not found.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Ownership check — ticket must be assigned to this mechanic
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var ticket = result.Data!;
-            // We can't directly compare MechanicId to userId; the service fetched the ticket with MechanicName
-            // The assigned mechanic's UserId is on the Mechanic entity — we verify via GetAssignedTicketsAsync scope
-            // For security, we re-check by verifying this ticket appears in the assigned list
-            var assigned = await _mediator.Send(new GetAssignedServiceTicketsQuery());
-            if (!assigned.Success || !assigned.Data!.Any(t => t.Id == id))
-            {
-                TempData["Error"] = "Access denied.";
-                return RedirectToAction(nameof(Index));
-            }
 
             var serviceTypes = await _mediator.Send(new GetActiveServiceTypesQuery());
             var parts = await _mediator.Send(new GetPartsQuery());
@@ -153,15 +141,9 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddItem(int id, ServiceTicketItemFormDto dto)
         {
-            if (dto.ServiceTypeId == null && dto.PartId == null)
-            {
-                TempData["Error"] = "Select a service type or a part.";
-                return RedirectToAction(nameof(Detail), new { id });
-            }
-
             var result = await _mediator.Send(new AddServiceTicketItemCommand(id, dto.ServiceTypeId, dto.PartId, dto.Quantity, dto.UnitPrice));
             if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault();
+                TempData["Error"] = result.FieldErrors?.Values.FirstOrDefault() ?? result.Errors?.FirstOrDefault();
             else
                 TempData["Success"] = "Item added.";
 

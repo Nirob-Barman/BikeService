@@ -1,13 +1,12 @@
 using BikeService.Application.DTOs.ServiceTicket;
 using BikeService.Application.Features.ServiceTickets.Queries.GetMyServiceTickets;
-using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Application.Features.ServiceTickets.Queries.GetMyServiceTicketById;
 using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
 using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
 using BikeService.Web.ViewModels.ServiceTicket;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace BikeService.Web.Controllers
 {
@@ -36,17 +35,10 @@ namespace BikeService.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Detail(int id)
         {
-            var ticketResult = await _mediator.Send(new GetServiceTicketByIdQuery(id));
+            var ticketResult = await _mediator.Send(new GetMyServiceTicketByIdQuery(id));
             if (!ticketResult.Success)
             {
-                TempData["Error"] = "Ticket not found.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (ticketResult.Data!.CustomerId != userId)
-            {
-                TempData["Error"] = "Access denied.";
+                TempData["Error"] = ticketResult.Errors?.FirstOrDefault() ?? "Ticket not found.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -54,7 +46,7 @@ namespace BikeService.Web.Controllers
 
             return View(new ServiceTicketDetailViewModel
             {
-                Ticket = ticketResult.Data,
+                Ticket = ticketResult.Data!,
                 Notes = notesResult.Data ?? new()
             });
         }

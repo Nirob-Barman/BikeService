@@ -55,6 +55,12 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("ExportInvoices")]
         public async Task<IActionResult> ExportInvoices(DateTime dateFrom, DateTime dateTo)
         {
+            if (dateFrom > dateTo)
+            {
+                TempData["Error"] = "Start date must be before end date.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var csv = await _mediator.Send(new ExportInvoicesCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Invoices_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
@@ -62,6 +68,12 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("ExportTickets")]
         public async Task<IActionResult> ExportTickets(DateTime dateFrom, DateTime dateTo)
         {
+            if (dateFrom > dateTo)
+            {
+                TempData["Error"] = "Start date must be before end date.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var csv = await _mediator.Send(new ExportTicketsCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Tickets_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
@@ -69,6 +81,12 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("ExportParts")]
         public async Task<IActionResult> ExportParts(DateTime dateFrom, DateTime dateTo)
         {
+            if (dateFrom > dateTo)
+            {
+                TempData["Error"] = "Start date must be before end date.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var csv = await _mediator.Send(new ExportPartUsageCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"PartUsage_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }

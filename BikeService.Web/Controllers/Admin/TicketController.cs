@@ -154,7 +154,7 @@ namespace BikeService.Web.Controllers.Admin
         {
             var result = await _mediator.Send(new AddServiceTicketItemCommand(ticketId, dto.ServiceTypeId, dto.PartId, dto.Quantity, dto.UnitPrice));
             if (!result.Success)
-                TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add item.";
+                TempData["Error"] = result.FieldErrors?.Values.FirstOrDefault() ?? result.Errors?.FirstOrDefault() ?? "Failed to add item.";
             else
                 TempData["Success"] = "Item added to ticket.";
 

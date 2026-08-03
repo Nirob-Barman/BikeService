@@ -396,7 +396,7 @@ Each entry records:
 - Old values and new values as JSON (for Update actions)
 - Timestamp
 
-Services that write audit logs: ServiceTicket, Appointment, Part, Invoice, PaymentGateway, PromoCode, Mechanic, BulkImport, LeaveRequest.
+Command handlers that write audit logs span: ServiceTicket, Appointment, Part, Invoice, PaymentGateway, PromoCode, Mechanic, BulkImport, LeaveRequest.
 
 ---
 
@@ -571,11 +571,13 @@ Both channels fire for the same events — the service layer sends both in the s
 ### Architecture
 ```
 Domain        — pure entity classes, enums, no logic
-Application   — business logic, services, DTOs, interfaces
+Application   — CQRS Commands/Queries + MediatR handlers, DTOs, interfaces
 Infrastructure — EF Core, Identity, email, file storage, payments, PDF
 Web           — controllers, Razor views, ViewModels
 ```
 Dependencies flow inward only. Web never references Infrastructure directly.
+
+Every use case is a `Command` (write) or `Query` (read) sent through `IMediator`, handled by a class in `Application/Features/{Feature}/{Commands|Queries}/{Name}/`. There is no `Application/Services/` layer — controllers inject `IMediator` and call `_mediator.Send(new SomeCommand(...))` / `new SomeQuery(...))`. See [BikeService.Application/CLAUDE.md](../BikeService.Application/CLAUDE.md) for the full pattern.
 
 ### Admin Controller Routing
 Admin controllers live in `Web/Controllers/Admin/` (no ASP.NET Core Areas). URLs follow the pattern `/Admin/{Controller}/{Action}`, enforced via attribute routing.
@@ -608,20 +610,22 @@ Views for the three conflicting ones live in `Views/AdminAppointment/`, `Views/A
 
 Each portal layout (Customer, Admin, Mechanic) is isolated from the public navbar. Navigation within each portal is handled entirely by its own sidebar. Customer portal views opt in via a `_ViewStart.cshtml` in each view folder pointing to `_CustomerLayout.cshtml`.
 
-### Key Service Files
-| Service | Responsibility |
+### Key Feature Areas
+| Feature (`Application/Features/{Feature}/`) | Responsibility |
 |---|---|
-| `ServiceTicketService` | Status workflow, stock deduction/restock, mechanic assignment |
-| `InvoiceService` | Generate, issue, void, customer-scoped queries |
-| `PaymentService` | Initiate, handle success/cancel, promo application |
-| `ReportService` | Revenue, ticket, parts usage reports + CSV export |
-| `TicketNoteService` | Add notes, ownership enforcement, cross-party notifications |
-| `ReviewService` | Create review, validate ownership + status |
-| `DashboardService` | KPI aggregation, monthly revenue chart |
-| `AuditLogService` | Write audit entries, paginated query |
-| `NotificationService` | Create, read, mark-read in-app notifications |
-| `PartService` | CRUD, stock adjustment, low-stock alert creation |
-| `LeaveRequestService` | Submit, approve, reject, cancel; overlap guard; audit logging |
+| `ServiceTickets` | Status workflow, stock deduction/restock, mechanic assignment |
+| `Invoices` | Generate, issue, void, customer-scoped queries |
+| `Payments` | Initiate, handle success/cancel, promo application |
+| `Reports` | Revenue, ticket, parts usage reports + CSV export |
+| `TicketNotes` | Add notes, ownership enforcement, cross-party notifications |
+| `Reviews` | Create review, validate ownership + status |
+| `Dashboard` | KPI aggregation, monthly revenue chart |
+| `AuditLogs` | Paginated query (writes still go through the plain `IAuditLogService.LogAsync`, called from inside other handlers) |
+| `Notifications` | Create, read, mark-read in-app notifications |
+| `Parts` | CRUD, stock adjustment, low-stock alert creation |
+| `LeaveRequests` | Submit, approve, reject, cancel; overlap guard; audit logging |
+
+Each feature folder has `Commands/{VerbNoun}/` (write) and `Queries/{GetSomething}/` (read) subfolders, each holding a `Command`/`Query` record, its `Handler`, and (for commands) a FluentValidation `Validator`.
 
 ### Adding a New Entity (Checklist)
 1. `Domain/Entities/NewEntity.cs` — extends `BaseEntity`
@@ -629,11 +633,11 @@ Each portal layout (Customer, Admin, Mechanic) is isolated from the public navba
 3. `Infrastructure/Persistence/Configurations/NewEntityConfiguration.cs`
 4. `dotnet ef migrations add <Name> --project BikeService.Infrastructure --startup-project BikeService.Web`
 5. `Application/DTOs/NewEntity/NewEntityDto.cs`
-6. `Application/Interfaces/Services/INewEntityService.cs`
-7. `Application/Services/NewEntityService.cs`
-8. Register in `ApplicationServiceRegistration.cs`
-9. `Application/Mappers/NewEntityMapper.cs`
-10. `Web/Controllers/Admin/NewEntityController.cs` — add `[Authorize(Roles = AppRoles.Admin)]` + `[Route("Admin/[controller]/[action]/{id?}")]`
+6. `Application/Mappers/NewEntityMapper.cs`
+7. For each write op → `Application/Features/NewEntities/Commands/{VerbNoun}/` (`Command` + `Validator` + `Handler`)
+8. For each read op → `Application/Features/NewEntities/Queries/{GetSomething}/` (`Query` + `Handler`)
+9. No DI registration step — MediatR/FluentValidation auto-discover every handler/validator via assembly scan
+10. `Web/Controllers/Admin/NewEntityController.cs` — inject `IMediator`, add `[Authorize(Roles = AppRoles.Admin)]` + `[Route("Admin/[controller]/[action]/{id?}")]`
 11. `Web/ViewModels/NewEntity/NewEntityFormViewModel.cs`
 12. `Web/ViewModels/Mappers/NewEntityViewModelMapper.cs` (only if ViewModel differs from DTO)
 13. `Web/Views/NewEntity/` (Index, Create, Edit)

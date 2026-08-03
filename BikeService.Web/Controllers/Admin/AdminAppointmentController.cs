@@ -1,11 +1,10 @@
 using BikeService.Application.DTOs.Appointment;
 using BikeService.Application.DTOs.ServiceTicket;
 using BikeService.Application.Features.Appointments.Commands.CancelAppointment;
-using BikeService.Application.Features.Appointments.Commands.CompleteAppointment;
 using BikeService.Application.Features.Appointments.Commands.ConfirmAppointment;
+using BikeService.Application.Features.Appointments.Commands.ConvertAppointmentToTicket;
 using BikeService.Application.Features.Appointments.Queries.GetAppointmentById;
 using BikeService.Application.Features.Appointments.Queries.GetAppointments;
-using BikeService.Application.Features.ServiceTickets.Commands.CreateServiceTicket;
 using BikeService.Domain.Constants;
 using BikeService.Domain.Enums;
 using MediatR;
@@ -84,24 +83,12 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateTicket(int id)
         {
-            var appointmentResult = await _mediator.Send(new GetAppointmentByIdQuery(id));
-            if (!appointmentResult.Success)
-            {
-                TempData["Error"] = appointmentResult.Errors?.FirstOrDefault() ?? "Appointment not found.";
-                return RedirectToAction(nameof(Detail), new { id });
-            }
-
-            var appointment = appointmentResult.Data!;
-
-            var result = await _mediator.Send(new CreateServiceTicketCommand(
-                appointment.BikeId, null, appointment.Id, null, null));
+            var result = await _mediator.Send(new ConvertAppointmentToTicketCommand(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to create service ticket.";
                 return RedirectToAction(nameof(Detail), new { id });
             }
-
-            await _mediator.Send(new CompleteAppointmentCommand(id));
 
             TempData["Success"] = "Service ticket created.";
             return RedirectToAction("Detail", "Ticket", new { id = result.Data });
