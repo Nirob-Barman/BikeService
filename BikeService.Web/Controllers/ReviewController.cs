@@ -1,6 +1,7 @@
 using BikeService.Application.Features.Reviews.Commands.CreateReview;
 using BikeService.Application.Features.Reviews.Queries.GetReviewByTicketId;
 using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Review;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class ReviewController : Controller
     {
         private readonly IMediator _mediator;

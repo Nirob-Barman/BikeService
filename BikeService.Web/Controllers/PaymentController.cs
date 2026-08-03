@@ -2,6 +2,7 @@ using BikeService.Application.Features.Payments.Commands.HandlePaymentCancel;
 using BikeService.Application.Features.Payments.Commands.HandlePaymentSuccess;
 using BikeService.Application.Features.Payments.Commands.InitiatePayment;
 using BikeService.Application.Features.Payments.Queries.GetCheckoutInfo;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Payment;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class PaymentController : Controller
     {
         private readonly IMediator _mediator;

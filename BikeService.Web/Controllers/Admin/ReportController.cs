@@ -5,6 +5,7 @@ using BikeService.Application.Features.Reports.Queries.ExportTicketsCsv;
 using BikeService.Application.Features.Reports.Queries.GetPartUsageReport;
 using BikeService.Application.Features.Reports.Queries.GetRevenueReport;
 using BikeService.Application.Features.Reports.Queries.GetTicketReport;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Report;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,7 @@ using System.Text;
 
 namespace BikeService.Web.Controllers.Admin
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = AppRoles.Admin)]
     [Route("Admin/[controller]")]
     public class ReportController : Controller
     {

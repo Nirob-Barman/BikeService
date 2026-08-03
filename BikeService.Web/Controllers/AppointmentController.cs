@@ -3,6 +3,7 @@ using BikeService.Application.Features.Appointments.Commands.CancelAppointment;
 using BikeService.Application.Features.Appointments.Commands.CreateAppointment;
 using BikeService.Application.Features.Appointments.Queries.GetMyAppointments;
 using BikeService.Application.Features.CustomerBikes.Queries.GetMyBikes;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Appointment;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class AppointmentController : Controller
     {
         private readonly IMediator _mediator;

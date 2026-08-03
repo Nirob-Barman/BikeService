@@ -5,6 +5,7 @@ using BikeService.Application.Features.CustomerBikes.Commands.UpdateCustomerBike
 using BikeService.Application.Features.CustomerBikes.Queries.GetCustomerBikeById;
 using BikeService.Application.Features.CustomerBikes.Queries.GetMyBikes;
 using BikeService.Application.Interfaces.FileStorage;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.CustomerBike;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class CustomerBikeController : Controller
     {
         private readonly IMediator _mediator;

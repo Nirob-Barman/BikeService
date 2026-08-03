@@ -3,6 +3,7 @@ using BikeService.Application.Features.ServiceTickets.Queries.GetMyServiceTicket
 using BikeService.Application.Features.ServiceTickets.Queries.GetMyServiceTicketById;
 using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
 using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
+using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.ServiceTicket;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class ServiceTicketController : Controller
     {
         private readonly IMediator _mediator;

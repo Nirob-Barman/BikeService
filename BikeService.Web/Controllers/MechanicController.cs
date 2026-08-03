@@ -14,6 +14,7 @@ using BikeService.Application.Features.ServiceTickets.Queries.GetAssignedService
 using BikeService.Application.Features.ServiceTypes.Queries.GetActiveServiceTypes;
 using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
 using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
+using BikeService.Domain.Constants;
 using BikeService.Domain.Enums;
 using BikeService.Web.ViewModels.LeaveRequest;
 using BikeService.Web.ViewModels.Mappers;
@@ -25,7 +26,7 @@ using BikeService.Application.DTOs.Payroll;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Mechanic")]
+    [Authorize(Roles = AppRoles.Mechanic)]
     public class MechanicController : Controller
     {
         private readonly IMediator _mediator;

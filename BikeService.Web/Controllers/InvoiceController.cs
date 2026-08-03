@@ -2,13 +2,14 @@ using BikeService.Application.DTOs.Invoice;
 using BikeService.Application.Features.Invoices.Queries.GetMyInvoiceById;
 using BikeService.Application.Features.Invoices.Queries.GetMyInvoices;
 using BikeService.Application.Interfaces;
+using BikeService.Domain.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = AppRoles.Customer)]
     public class InvoiceController : Controller
     {
         private readonly IMediator _mediator;
