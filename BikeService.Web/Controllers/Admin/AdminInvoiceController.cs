@@ -1,8 +1,12 @@
 using BikeService.Application.DTOs.Invoice;
+using BikeService.Application.Features.Invoices.Commands.IssueInvoice;
+using BikeService.Application.Features.Invoices.Commands.VoidInvoice;
+using BikeService.Application.Features.Invoices.Queries.GetInvoiceById;
+using BikeService.Application.Features.Invoices.Queries.GetInvoices;
 using BikeService.Application.Interfaces;
-using BikeService.Application.Interfaces.Services;
 using BikeService.Domain.Constants;
 using BikeService.Domain.Enums;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,19 +16,19 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/Invoice")]
     public class AdminInvoiceController : Controller
     {
-        private readonly IInvoiceService _invoiceService;
+        private readonly IMediator _mediator;
         private readonly IPdfService _pdfService;
 
-        public AdminInvoiceController(IInvoiceService invoiceService, IPdfService pdfService)
+        public AdminInvoiceController(IMediator mediator, IPdfService pdfService)
         {
-            _invoiceService = invoiceService;
-            _pdfService     = pdfService;
+            _mediator   = mediator;
+            _pdfService = pdfService;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index(InvoiceStatus? status)
         {
-            var result = await _invoiceService.GetAllAsync(new InvoiceFilterDto { Status = status });
+            var result = await _mediator.Send(new GetInvoicesQuery(new InvoiceFilterDto { Status = status }));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load invoices.";
@@ -38,7 +42,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
-            var result = await _invoiceService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetInvoiceByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Invoice not found.";
@@ -50,7 +54,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Download/{id}")]
         public async Task<IActionResult> Download(int id)
         {
-            var result = await _invoiceService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetInvoiceByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Invoice not found.";
@@ -64,7 +68,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Issue(int id)
         {
-            var result = await _invoiceService.IssueAsync(id);
+            var result = await _mediator.Send(new IssueInvoiceCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to issue invoice.";
             else
@@ -77,7 +81,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Void(int id)
         {
-            var result = await _invoiceService.VoidAsync(id);
+            var result = await _mediator.Send(new VoidInvoiceCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to void invoice.";
             else

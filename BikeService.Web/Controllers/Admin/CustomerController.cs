@@ -1,5 +1,8 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Customers.Commands.BanCustomer;
+using BikeService.Application.Features.Customers.Commands.UnbanCustomer;
+using BikeService.Application.Features.Customers.Queries.GetCustomers;
 using BikeService.Domain.Constants;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,17 +12,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class CustomerController : Controller
     {
-        private readonly ICustomerService _customerService;
+        private readonly IMediator _mediator;
 
-        public CustomerController(ICustomerService customerService)
+        public CustomerController(IMediator mediator)
         {
-            _customerService = customerService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var result = await _customerService.GetAllAsync();
+            var result = await _mediator.Send(new GetCustomersQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load customers.";
@@ -32,7 +35,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Ban(string id)
         {
-            var result = await _customerService.BanAsync(id);
+            var result = await _mediator.Send(new BanCustomerCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to ban customer.";
             else
@@ -45,7 +48,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Unban(string id)
         {
-            var result = await _customerService.UnbanAsync(id);
+            var result = await _mediator.Send(new UnbanCustomerCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to unban customer.";
             else

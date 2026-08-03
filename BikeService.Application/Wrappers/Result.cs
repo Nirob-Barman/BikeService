@@ -22,6 +22,16 @@ namespace BikeService.Application.Wrappers
             };
         }
 
+        public static Result<T> FailFields(Dictionary<string, string> fieldErrors, string? message = null)
+        {
+            return new Result<T>
+            {
+                Success = false,
+                FieldErrors = fieldErrors,
+                Message = message
+            };
+        }
+
 
 
         // Success

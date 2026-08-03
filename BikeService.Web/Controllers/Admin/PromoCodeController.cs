@@ -1,7 +1,13 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.PromoCodes.Commands.CreatePromoCode;
+using BikeService.Application.Features.PromoCodes.Commands.DeletePromoCode;
+using BikeService.Application.Features.PromoCodes.Commands.TogglePromoCodeActive;
+using BikeService.Application.Features.PromoCodes.Commands.UpdatePromoCode;
+using BikeService.Application.Features.PromoCodes.Queries.GetPromoCodeById;
+using BikeService.Application.Features.PromoCodes.Queries.GetPromoCodes;
 using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Mappers;
 using BikeService.Web.ViewModels.PromoCode;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,17 +17,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class PromoCodeController : Controller
     {
-        private readonly IPromoCodeService _promoCodeService;
+        private readonly IMediator _mediator;
 
-        public PromoCodeController(IPromoCodeService promoCodeService)
+        public PromoCodeController(IMediator mediator)
         {
-            _promoCodeService = promoCodeService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var result = await _promoCodeService.GetAllAsync();
+            var result = await _mediator.Send(new GetPromoCodesQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load promo codes.";
@@ -39,7 +45,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _promoCodeService.CreateAsync(PromoCodeViewModelMapper.ToDto(vm));
+            var dto = PromoCodeViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new CreatePromoCodeCommand(
+                dto.Code, dto.DiscountPercent, dto.MaxUsages, dto.ExpiresAt, dto.IsActive));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -57,7 +65,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _promoCodeService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetPromoCodeByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Promo code not found.";
@@ -72,7 +80,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _promoCodeService.UpdateAsync(id, PromoCodeViewModelMapper.ToDto(vm));
+            var dto = PromoCodeViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new UpdatePromoCodeCommand(
+                id, dto.Code, dto.DiscountPercent, dto.MaxUsages, dto.ExpiresAt, dto.IsActive));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -91,7 +101,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
-            var result = await _promoCodeService.ToggleActiveAsync(id);
+            var result = await _mediator.Send(new TogglePromoCodeActiveCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to toggle promo code.";
             else
@@ -104,7 +114,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _promoCodeService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeletePromoCodeCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete promo code.";
             else

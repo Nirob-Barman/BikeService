@@ -1,20 +1,21 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.PromoCodes.Queries.GetActivePromoCodes;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BikeService.Web.Controllers
 {
     public class OfferController : Controller
     {
-        private readonly IPromoCodeService _promoCodeService;
+        private readonly IMediator _mediator;
 
-        public OfferController(IPromoCodeService promoCodeService)
+        public OfferController(IMediator mediator)
         {
-            _promoCodeService = promoCodeService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var result = await _promoCodeService.GetActiveAsync();
+            var result = await _mediator.Send(new GetActivePromoCodesQuery());
             return View(result.Data ?? new());
         }
     }

@@ -1,5 +1,9 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.LeaveRequests.Commands.ApproveLeaveRequest;
+using BikeService.Application.Features.LeaveRequests.Commands.RejectLeaveRequest;
+using BikeService.Application.Features.LeaveRequests.Queries.GetLeaveRequestById;
+using BikeService.Application.Features.LeaveRequests.Queries.GetLeaveRequests;
 using BikeService.Domain.Constants;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,19 +13,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class LeaveRequestController : Controller
     {
-        private readonly ILeaveRequestService _leaveService;
-        private readonly IMechanicService _mechanicService;
+        private readonly IMediator _mediator;
 
-        public LeaveRequestController(ILeaveRequestService leaveService, IMechanicService mechanicService)
+        public LeaveRequestController(IMediator mediator)
         {
-            _leaveService    = leaveService;
-            _mechanicService = mechanicService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var result = await _leaveService.GetAllAsync();
+            var result = await _mediator.Send(new GetLeaveRequestsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load leave requests.";
@@ -33,7 +35,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
-            var result = await _leaveService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetLeaveRequestByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Leave request not found.";
@@ -46,7 +48,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(int id, string? adminNotes)
         {
-            var result = await _leaveService.ApproveAsync(id, adminNotes);
+            var result = await _mediator.Send(new ApproveLeaveRequestCommand(id, adminNotes));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to approve leave request.";
             else
@@ -59,7 +61,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Reject(int id, string? adminNotes)
         {
-            var result = await _leaveService.RejectAsync(id, adminNotes);
+            var result = await _mediator.Send(new RejectLeaveRequestCommand(id, adminNotes));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to reject leave request.";
             else

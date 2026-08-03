@@ -1,7 +1,15 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Mechanics.Commands.CreateMechanic;
+using BikeService.Application.Features.Mechanics.Commands.CreateMechanicLogin;
+using BikeService.Application.Features.Mechanics.Commands.DeleteMechanic;
+using BikeService.Application.Features.Mechanics.Commands.ToggleMechanicAvailability;
+using BikeService.Application.Features.Mechanics.Commands.ToggleMechanicLogin;
+using BikeService.Application.Features.Mechanics.Commands.UpdateMechanic;
+using BikeService.Application.Features.Mechanics.Queries.GetMechanicById;
+using BikeService.Application.Features.Mechanics.Queries.GetMechanics;
 using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Mappers;
 using BikeService.Web.ViewModels.Mechanic;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,17 +19,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/Mechanic")]
     public class AdminMechanicController : Controller
     {
-        private readonly IMechanicService _mechanicService;
+        private readonly IMediator _mediator;
 
-        public AdminMechanicController(IMechanicService mechanicService)
+        public AdminMechanicController(IMediator mediator)
         {
-            _mechanicService = mechanicService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var result = await _mechanicService.GetAllAsync();
+            var result = await _mediator.Send(new GetMechanicsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load mechanics.";
@@ -39,7 +47,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _mechanicService.CreateAsync(MechanicViewModelMapper.ToDto(vm));
+            var dto = MechanicViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new CreateMechanicCommand(
+                dto.FullName, dto.Specialty, dto.IsAvailable, dto.Email, dto.Password));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -57,7 +67,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _mechanicService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetMechanicByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Mechanic not found.";
@@ -72,7 +82,8 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _mechanicService.UpdateAsync(id, MechanicViewModelMapper.ToDto(vm));
+            var dto = MechanicViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new UpdateMechanicCommand(id, dto.FullName, dto.Specialty, dto.IsAvailable));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -91,7 +102,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
-            var result = await _mechanicService.ToggleAvailabilityAsync(id);
+            var result = await _mediator.Send(new ToggleMechanicAvailabilityCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to toggle mechanic availability.";
             else
@@ -116,7 +127,7 @@ namespace BikeService.Web.Controllers.Admin
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
-            var result = await _mechanicService.CreateLoginAsync(id, email.Trim(), password);
+            var result = await _mediator.Send(new CreateMechanicLoginCommand(id, email.Trim(), password));
             if (!result.Success)
                 TempData["LoginError"] = result.Errors?.FirstOrDefault() ?? "Failed to create login.";
             else
@@ -129,7 +140,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleLogin(int id)
         {
-            var result = await _mechanicService.ToggleLoginAsync(id);
+            var result = await _mediator.Send(new ToggleMechanicLoginCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to toggle login.";
             else
@@ -142,7 +153,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _mechanicService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeleteMechanicCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete mechanic.";
             else

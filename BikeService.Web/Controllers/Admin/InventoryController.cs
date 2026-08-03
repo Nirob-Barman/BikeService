@@ -1,7 +1,15 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Parts.Commands.CreatePart;
+using BikeService.Application.Features.Parts.Commands.DeletePart;
+using BikeService.Application.Features.Parts.Commands.ImportParts;
+using BikeService.Application.Features.Parts.Commands.ResolveStockAlert;
+using BikeService.Application.Features.Parts.Commands.UpdatePart;
+using BikeService.Application.Features.Parts.Queries.GetPartById;
+using BikeService.Application.Features.Parts.Queries.GetParts;
+using BikeService.Application.Features.Parts.Queries.GetStockAlerts;
 using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Inventory;
 using BikeService.Web.ViewModels.Mappers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,26 +19,24 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class InventoryController : Controller
     {
-        private readonly IPartService _partService;
-        private readonly IBulkImportService _bulkImportService;
+        private readonly IMediator _mediator;
 
-        public InventoryController(IPartService partService, IBulkImportService bulkImportService)
+        public InventoryController(IMediator mediator)
         {
-            _partService = partService;
-            _bulkImportService = bulkImportService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var partsResult = await _partService.GetAllAsync();
+            var partsResult = await _mediator.Send(new GetPartsQuery());
             if (!partsResult.Success)
             {
                 TempData["Error"] = partsResult.Errors?.FirstOrDefault() ?? "Failed to load parts.";
                 return View(new List<BikeService.Application.DTOs.Part.PartDto>());
             }
 
-            var alertsResult = await _partService.GetStockAlertsAsync(unresolvedOnly: true);
+            var alertsResult = await _mediator.Send(new GetStockAlertsQuery(UnresolvedOnly: true));
             ViewBag.UnresolvedAlertCount = alertsResult.Success ? alertsResult.Data?.Count ?? 0 : 0;
 
             return View(partsResult.Data);
@@ -46,7 +52,8 @@ namespace BikeService.Web.Controllers.Admin
             if (!ModelState.IsValid) return View(vm);
 
             var dto = PartViewModelMapper.ToDto(vm);
-            var result = await _partService.CreateAsync(dto);
+            var result = await _mediator.Send(new CreatePartCommand(
+                dto.Name, dto.SKU, dto.UnitPrice, dto.StockQuantity, dto.LowStockThreshold));
 
             if (!result.Success)
             {
@@ -65,7 +72,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _partService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetPartByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Part not found.";
@@ -80,7 +87,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _partService.UpdateAsync(id, PartViewModelMapper.ToDto(vm));
+            var dto = PartViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new UpdatePartCommand(
+                id, dto.Name, dto.SKU, dto.UnitPrice, dto.StockQuantity, dto.LowStockThreshold));
 
             if (!result.Success)
             {
@@ -100,7 +109,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _partService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeletePartCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete part.";
             else
@@ -112,7 +121,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("StockAlerts")]
         public async Task<IActionResult> StockAlerts()
         {
-            var result = await _partService.GetStockAlertsAsync(unresolvedOnly: true);
+            var result = await _mediator.Send(new GetStockAlertsQuery(UnresolvedOnly: true));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load stock alerts.";
@@ -125,7 +134,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResolveAlert(int alertId)
         {
-            var result = await _partService.ResolveStockAlertAsync(alertId);
+            var result = await _mediator.Send(new ResolveStockAlertCommand(alertId));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to resolve alert.";
             else
@@ -154,7 +163,7 @@ namespace BikeService.Web.Controllers.Admin
             }
 
             using var stream = file.OpenReadStream();
-            var result = await _bulkImportService.ImportPartsAsync(stream, file.FileName);
+            var result = await _mediator.Send(new ImportPartsCommand(stream, file.FileName));
 
             if (!result.Success)
             {

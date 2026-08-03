@@ -1,6 +1,11 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Dashboard.Queries.GetDashboard;
+using BikeService.Application.Features.Mechanics.Queries.GetMechanics;
+using BikeService.Application.Features.PromoCodes.Queries.GetActivePromoCodes;
+using BikeService.Application.Features.Reviews.Queries.GetRecentReviews;
+using BikeService.Application.Features.ServiceTypes.Queries.GetActiveServiceTypes;
 using BikeService.Web.Models;
 using BikeService.Web.ViewModels.Home;
+using MediatR;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -10,35 +15,21 @@ namespace BikeService.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IServiceTypeService _serviceTypeService;
-        private readonly IMechanicService _mechanicService;
-        private readonly IPromoCodeService _promoCodeService;
-        private readonly IDashboardService _dashboardService;
-        private readonly IReviewService _reviewService;
+        private readonly IMediator _mediator;
 
-        public HomeController(
-            ILogger<HomeController> logger,
-            IServiceTypeService serviceTypeService,
-            IMechanicService mechanicService,
-            IPromoCodeService promoCodeService,
-            IDashboardService dashboardService,
-            IReviewService reviewService)
+        public HomeController(ILogger<HomeController> logger, IMediator mediator)
         {
             _logger = logger;
-            _serviceTypeService = serviceTypeService;
-            _mechanicService = mechanicService;
-            _promoCodeService = promoCodeService;
-            _dashboardService = dashboardService;
-            _reviewService = reviewService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var serviceTypes = await _serviceTypeService.GetActiveAsync();
-            var mechanics = await _mechanicService.GetAllAsync();
-            var promoCodes = await _promoCodeService.GetActiveAsync();
-            var dashboard = await _dashboardService.GetDashboardAsync();
-            var reviews = await _reviewService.GetRecentAsync(6);
+            var serviceTypes = await _mediator.Send(new GetActiveServiceTypesQuery());
+            var mechanics = await _mediator.Send(new GetMechanicsQuery());
+            var promoCodes = await _mediator.Send(new GetActivePromoCodesQuery());
+            var dashboard = await _mediator.Send(new GetDashboardQuery());
+            var reviews = await _mediator.Send(new GetRecentReviewsQuery(6));
 
             var vm = new HomeViewModel
             {

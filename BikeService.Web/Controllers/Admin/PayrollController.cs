@@ -1,7 +1,15 @@
 using BikeService.Application.DTOs.Payroll;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Payroll.Commands.CreatePayrollRecord;
+using BikeService.Application.Features.Payroll.Commands.DeletePayrollRecord;
+using BikeService.Application.Features.Payroll.Commands.FinalizePayrollRecord;
+using BikeService.Application.Features.Payroll.Commands.MarkPayrollRecordPaid;
+using BikeService.Application.Features.Payroll.Commands.UpdatePayrollRecord;
+using BikeService.Application.Features.Payroll.Queries.GetPayrollRecordById;
+using BikeService.Application.Features.Payroll.Queries.GetPayrollRecords;
+using BikeService.Application.Features.Mechanics.Queries.GetMechanics;
 using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Payroll;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -12,19 +20,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class PayrollController : Controller
     {
-        private readonly IPayrollService  _payrollService;
-        private readonly IMechanicService _mechanicService;
+        private readonly IMediator _mediator;
 
-        public PayrollController(IPayrollService payrollService, IMechanicService mechanicService)
+        public PayrollController(IMediator mediator)
         {
-            _payrollService  = payrollService;
-            _mechanicService = mechanicService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index(int? year)
         {
-            var result = await _payrollService.GetAllAsync(year);
+            var result = await _mediator.Send(new GetPayrollRecordsQuery(year));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load payroll records.";
@@ -39,7 +45,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
-            var result = await _payrollService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetPayrollRecordByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Payroll record not found.";
@@ -65,18 +71,8 @@ namespace BikeService.Web.Controllers.Admin
                 return View(vm);
             }
 
-            var dto = new PayrollRecordFormDto
-            {
-                MechanicId = vm.MechanicId,
-                Month      = vm.Month,
-                Year       = vm.Year,
-                BaseSalary = vm.BaseSalary,
-                Bonus      = vm.Bonus,
-                Deductions = vm.Deductions,
-                Notes      = vm.Notes,
-            };
-
-            var result = await _payrollService.CreateAsync(dto);
+            var result = await _mediator.Send(new CreatePayrollRecordCommand(
+                vm.MechanicId, vm.Month, vm.Year, vm.BaseSalary, vm.Bonus, vm.Deductions, vm.Notes));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to create payroll record.";
@@ -91,7 +87,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _payrollService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetPayrollRecordByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Payroll record not found.";
@@ -121,28 +117,18 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid)
             {
-                var r = await _payrollService.GetByIdAsync(id);
+                var r = await _mediator.Send(new GetPayrollRecordByIdQuery(id));
                 ViewBag.Record = r.Data;
                 await PopulateMechanicsAsync(vm.MechanicId);
                 return View(vm);
             }
 
-            var dto = new PayrollRecordFormDto
-            {
-                MechanicId = vm.MechanicId,
-                Month      = vm.Month,
-                Year       = vm.Year,
-                BaseSalary = vm.BaseSalary,
-                Bonus      = vm.Bonus,
-                Deductions = vm.Deductions,
-                Notes      = vm.Notes,
-            };
-
-            var result = await _payrollService.UpdateAsync(id, dto);
+            var result = await _mediator.Send(new UpdatePayrollRecordCommand(
+                id, vm.MechanicId, vm.Month, vm.Year, vm.BaseSalary, vm.Bonus, vm.Deductions, vm.Notes));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update payroll record.";
-                var r = await _payrollService.GetByIdAsync(id);
+                var r = await _mediator.Send(new GetPayrollRecordByIdQuery(id));
                 ViewBag.Record = r.Data;
                 await PopulateMechanicsAsync(vm.MechanicId);
                 return View(vm);
@@ -156,7 +142,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Finalize(int id)
         {
-            var result = await _payrollService.FinalizeAsync(id);
+            var result = await _mediator.Send(new FinalizePayrollRecordCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to finalize payroll record.";
             else
@@ -169,7 +155,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MarkPaid(int id)
         {
-            var result = await _payrollService.MarkPaidAsync(id);
+            var result = await _mediator.Send(new MarkPayrollRecordPaidCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to mark payroll as paid.";
             else
@@ -182,7 +168,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _payrollService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeletePayrollRecordCommand(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete payroll record.";
@@ -195,7 +181,7 @@ namespace BikeService.Web.Controllers.Admin
 
         private async Task PopulateMechanicsAsync(int? selectedId = null)
         {
-            var result = await _mechanicService.GetAllAsync();
+            var result = await _mediator.Send(new GetMechanicsQuery());
             ViewBag.Mechanics = new SelectList(result.Data ?? [], "Id", "FullName", selectedId);
         }
     }

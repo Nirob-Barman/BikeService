@@ -1,11 +1,24 @@
 using BikeService.Application.DTOs.LeaveRequest;
 using BikeService.Application.DTOs.ServiceTicket;
-using BikeService.Application.DTOs.TicketNote;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.LeaveRequests.Commands.CancelLeaveRequest;
+using BikeService.Application.Features.LeaveRequests.Commands.SubmitLeaveRequest;
+using BikeService.Application.Features.LeaveRequests.Queries.GetMyLeaveRequests;
+using BikeService.Application.Features.Payroll.Queries.GetMyPayroll;
+using BikeService.Application.Features.ServiceTickets.Commands.AddServiceTicketItem;
+using BikeService.Application.Features.ServiceTickets.Commands.RemoveServiceTicketItem;
+using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTicketDiagnosis;
+using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTicketStatus;
+using BikeService.Application.Features.Parts.Queries.GetParts;
+using BikeService.Application.Features.ServiceTickets.Queries.GetAssignedServiceTickets;
+using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Application.Features.ServiceTypes.Queries.GetActiveServiceTypes;
+using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
+using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
 using BikeService.Domain.Enums;
 using BikeService.Web.ViewModels.LeaveRequest;
 using BikeService.Web.ViewModels.Mappers;
 using BikeService.Web.ViewModels.Mechanic;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -16,33 +29,17 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Mechanic")]
     public class MechanicController : Controller
     {
-        private readonly IServiceTicketService _ticketService;
-        private readonly IServiceTypeService _serviceTypeService;
-        private readonly IPartService _partService;
-        private readonly ITicketNoteService _noteService;
-        private readonly ILeaveRequestService _leaveService;
-        private readonly IPayrollService _payrollService;
+        private readonly IMediator _mediator;
 
-        public MechanicController(
-            IServiceTicketService ticketService,
-            IServiceTypeService serviceTypeService,
-            IPartService partService,
-            ITicketNoteService noteService,
-            ILeaveRequestService leaveService,
-            IPayrollService payrollService)
+        public MechanicController(IMediator mediator)
         {
-            _ticketService = ticketService;
-            _serviceTypeService = serviceTypeService;
-            _partService = partService;
-            _noteService = noteService;
-            _leaveService = leaveService;
-            _payrollService = payrollService;
+            _mediator = mediator;
         }
 
         public async Task<IActionResult> Index()
         {
-            var ticketsResult = await _ticketService.GetAssignedTicketsAsync();
-            var leaveResult   = await _leaveService.GetMyLeaveRequestsAsync();
+            var ticketsResult = await _mediator.Send(new GetAssignedServiceTicketsQuery());
+            var leaveResult   = await _mediator.Send(new GetMyLeaveRequestsQuery());
 
             var active = ticketsResult.Success
                 ? ticketsResult.Data!
@@ -64,7 +61,7 @@ namespace BikeService.Web.Controllers
 
         public async Task<IActionResult> Tickets()
         {
-            var result = await _ticketService.GetAssignedTicketsAsync();
+            var result = await _mediator.Send(new GetAssignedServiceTicketsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault();
@@ -81,7 +78,7 @@ namespace BikeService.Web.Controllers
 
         public async Task<IActionResult> Detail(int id)
         {
-            var result = await _ticketService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetServiceTicketByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = "Ticket not found.";
@@ -94,16 +91,16 @@ namespace BikeService.Web.Controllers
             // We can't directly compare MechanicId to userId; the service fetched the ticket with MechanicName
             // The assigned mechanic's UserId is on the Mechanic entity — we verify via GetAssignedTicketsAsync scope
             // For security, we re-check by verifying this ticket appears in the assigned list
-            var assigned = await _ticketService.GetAssignedTicketsAsync();
+            var assigned = await _mediator.Send(new GetAssignedServiceTicketsQuery());
             if (!assigned.Success || !assigned.Data!.Any(t => t.Id == id))
             {
                 TempData["Error"] = "Access denied.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var serviceTypes = await _serviceTypeService.GetActiveAsync();
-            var parts = await _partService.GetAllAsync();
-            var notes = await _noteService.GetByTicketIdAsync(id);
+            var serviceTypes = await _mediator.Send(new GetActiveServiceTypesQuery());
+            var parts = await _mediator.Send(new GetPartsQuery());
+            var notes = await _mediator.Send(new GetTicketNotesQuery(id));
 
             return View(new MechanicTicketDetailViewModel
             {
@@ -118,11 +115,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddNote(int id, string message)
         {
-            var result = await _noteService.AddAsync(new TicketNoteFormDto
-            {
-                ServiceTicketId = id,
-                Message = message
-            });
+            var result = await _mediator.Send(new AddTicketNoteCommand(id, message));
 
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add note.";
@@ -134,7 +127,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AdvanceStatus(int id, ServiceTicketStatus newStatus)
         {
-            var result = await _ticketService.UpdateStatusAsync(id, newStatus);
+            var result = await _mediator.Send(new UpdateServiceTicketStatusCommand(id, newStatus));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault();
             else
@@ -147,7 +140,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateDiagnosis(int id, string? diagnosisNotes, DateTime? estimatedCompletion)
         {
-            var result = await _ticketService.UpdateDiagnosisAsync(id, diagnosisNotes, estimatedCompletion);
+            var result = await _mediator.Send(new UpdateServiceTicketDiagnosisCommand(id, diagnosisNotes, estimatedCompletion));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault();
             else
@@ -166,7 +159,7 @@ namespace BikeService.Web.Controllers
                 return RedirectToAction(nameof(Detail), new { id });
             }
 
-            var result = await _ticketService.AddItemAsync(id, dto);
+            var result = await _mediator.Send(new AddServiceTicketItemCommand(id, dto.ServiceTypeId, dto.PartId, dto.Quantity, dto.UnitPrice));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault();
             else
@@ -179,7 +172,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveItem(int itemId, int ticketId)
         {
-            var result = await _ticketService.RemoveItemAsync(itemId);
+            var result = await _mediator.Send(new RemoveServiceTicketItemCommand(itemId));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault();
 
@@ -191,7 +184,7 @@ namespace BikeService.Web.Controllers
         // GET: /Mechanic/Leave
         public async Task<IActionResult> Leave()
         {
-            var result = await _leaveService.GetMyLeaveRequestsAsync();
+            var result = await _mediator.Send(new GetMyLeaveRequestsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault();
@@ -215,7 +208,7 @@ namespace BikeService.Web.Controllers
                 return View(vm);
 
             var dto = LeaveRequestViewModelMapper.ToDto(vm);
-            var result = await _leaveService.SubmitAsync(dto);
+            var result = await _mediator.Send(new SubmitLeaveRequestCommand(dto.FromDate, dto.ToDate, dto.Type, dto.Reason));
 
             if (!result.Success)
             {
@@ -236,7 +229,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> LeaveCancel(int id)
         {
-            var result = await _leaveService.CancelAsync(id);
+            var result = await _mediator.Send(new CancelLeaveRequestCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to cancel leave request.";
             else
@@ -248,7 +241,7 @@ namespace BikeService.Web.Controllers
         // GET: /Mechanic/Payroll
         public async Task<IActionResult> Payroll()
         {
-            var result = await _payrollService.GetMyPayrollAsync();
+            var result = await _mediator.Send(new GetMyPayrollQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load payroll records.";

@@ -1,7 +1,10 @@
 using BikeService.Application.DTOs.ServiceTicket;
-using BikeService.Application.DTOs.TicketNote;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.ServiceTickets.Queries.GetMyServiceTickets;
+using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Application.Features.TicketNotes.Commands.AddTicketNote;
+using BikeService.Application.Features.TicketNotes.Queries.GetTicketNotes;
 using BikeService.Web.ViewModels.ServiceTicket;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,19 +14,17 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Customer")]
     public class ServiceTicketController : Controller
     {
-        private readonly IServiceTicketService _ticketService;
-        private readonly ITicketNoteService _noteService;
+        private readonly IMediator _mediator;
 
-        public ServiceTicketController(IServiceTicketService ticketService, ITicketNoteService noteService)
+        public ServiceTicketController(IMediator mediator)
         {
-            _ticketService = ticketService;
-            _noteService = noteService;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var result = await _ticketService.GetMyTicketsAsync();
+            var result = await _mediator.Send(new GetMyServiceTicketsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load service tickets.";
@@ -35,7 +36,7 @@ namespace BikeService.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Detail(int id)
         {
-            var ticketResult = await _ticketService.GetByIdAsync(id);
+            var ticketResult = await _mediator.Send(new GetServiceTicketByIdQuery(id));
             if (!ticketResult.Success)
             {
                 TempData["Error"] = "Ticket not found.";
@@ -49,7 +50,7 @@ namespace BikeService.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var notesResult = await _noteService.GetByTicketIdAsync(id);
+            var notesResult = await _mediator.Send(new GetTicketNotesQuery(id));
 
             return View(new ServiceTicketDetailViewModel
             {
@@ -62,11 +63,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddNote(int id, string message)
         {
-            var result = await _noteService.AddAsync(new TicketNoteFormDto
-            {
-                ServiceTicketId = id,
-                Message = message
-            });
+            var result = await _mediator.Send(new AddTicketNoteCommand(id, message));
 
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add note.";

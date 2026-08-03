@@ -1,6 +1,12 @@
 using BikeService.Application.DTOs.Report;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Reports.Queries.ExportInvoicesCsv;
+using BikeService.Application.Features.Reports.Queries.ExportPartUsageCsv;
+using BikeService.Application.Features.Reports.Queries.ExportTicketsCsv;
+using BikeService.Application.Features.Reports.Queries.GetPartUsageReport;
+using BikeService.Application.Features.Reports.Queries.GetRevenueReport;
+using BikeService.Application.Features.Reports.Queries.GetTicketReport;
 using BikeService.Web.ViewModels.Report;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
@@ -11,11 +17,11 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class ReportController : Controller
     {
-        private readonly IReportService _reportService;
+        private readonly IMediator _mediator;
 
-        public ReportController(IReportService reportService)
+        public ReportController(IMediator mediator)
         {
-            _reportService = reportService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
@@ -32,9 +38,9 @@ namespace BikeService.Web.Controllers.Admin
             }
 
             var filter = new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo };
-            var revenue = await _reportService.GetRevenueReportAsync(filter);
-            var tickets = await _reportService.GetTicketReportAsync(filter);
-            var parts   = await _reportService.GetPartUsageReportAsync(filter);
+            var revenue = await _mediator.Send(new GetRevenueReportQuery(filter));
+            var tickets = await _mediator.Send(new GetTicketReportQuery(filter));
+            var parts   = await _mediator.Send(new GetPartUsageReportQuery(filter));
 
             return View(new ReportViewModel
             {
@@ -49,21 +55,21 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("ExportInvoices")]
         public async Task<IActionResult> ExportInvoices(DateTime dateFrom, DateTime dateTo)
         {
-            var csv = await _reportService.ExportInvoicesCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });
+            var csv = await _mediator.Send(new ExportInvoicesCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Invoices_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
 
         [HttpGet("ExportTickets")]
         public async Task<IActionResult> ExportTickets(DateTime dateFrom, DateTime dateTo)
         {
-            var csv = await _reportService.ExportTicketsCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });
+            var csv = await _mediator.Send(new ExportTicketsCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"Tickets_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
 
         [HttpGet("ExportParts")]
         public async Task<IActionResult> ExportParts(DateTime dateFrom, DateTime dateTo)
         {
-            var csv = await _reportService.ExportPartUsageCsvAsync(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo });
+            var csv = await _mediator.Send(new ExportPartUsageCsvQuery(new ReportFilterDto { DateFrom = dateFrom, DateTo = dateTo }));
             return File(Encoding.UTF8.GetBytes(csv), "text/csv", $"PartUsage_{dateFrom:yyyyMMdd}_{dateTo:yyyyMMdd}.csv");
         }
     }

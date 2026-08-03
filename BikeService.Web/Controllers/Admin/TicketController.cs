@@ -1,8 +1,23 @@
 using BikeService.Application.DTOs.ServiceTicket;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.CustomerBikes.Queries.GetCustomerBikes;
+using BikeService.Application.Features.Invoices.Commands.GenerateInvoice;
+using BikeService.Application.Features.Mechanics.Queries.GetAvailableMechanics;
+using BikeService.Application.Features.Mechanics.Queries.GetMechanics;
+using BikeService.Application.Features.Parts.Queries.GetParts;
+using BikeService.Application.Features.ServiceTickets.Commands.AddServiceTicketItem;
+using BikeService.Application.Features.ServiceTickets.Commands.AssignMechanicToTicket;
+using BikeService.Application.Features.ServiceTickets.Commands.CancelServiceTicket;
+using BikeService.Application.Features.ServiceTickets.Commands.CreateServiceTicket;
+using BikeService.Application.Features.ServiceTickets.Commands.RemoveServiceTicketItem;
+using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTicketDiagnosis;
+using BikeService.Application.Features.ServiceTickets.Commands.UpdateServiceTicketStatus;
+using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
+using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTickets;
+using BikeService.Application.Features.ServiceTypes.Queries.GetActiveServiceTypes;
 using BikeService.Domain.Constants;
 using BikeService.Domain.Enums;
 using BikeService.Web.ViewModels.ServiceTicket;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -13,41 +28,25 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class TicketController : Controller
     {
-        private readonly IServiceTicketService _ticketService;
-        private readonly IMechanicService _mechanicService;
-        private readonly IServiceTypeService _serviceTypeService;
-        private readonly IPartService _partService;
-        private readonly IInvoiceService _invoiceService;
-        private readonly ICustomerBikeService _bikeService;
+        private readonly IMediator _mediator;
 
-        public TicketController(
-            IServiceTicketService ticketService,
-            IMechanicService mechanicService,
-            IServiceTypeService serviceTypeService,
-            IPartService partService,
-            IInvoiceService invoiceService,
-            ICustomerBikeService bikeService)
+        public TicketController(IMediator mediator)
         {
-            _ticketService      = ticketService;
-            _mechanicService    = mechanicService;
-            _serviceTypeService = serviceTypeService;
-            _partService        = partService;
-            _invoiceService     = invoiceService;
-            _bikeService        = bikeService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index(ServiceTicketStatus? status, int? mechanicId, DateTime? dateFrom, DateTime? dateTo)
         {
             var filter = new TicketFilterDto { Status = status, MechanicId = mechanicId, DateFrom = dateFrom, DateTo = dateTo };
-            var result = await _ticketService.GetAllAsync(filter);
+            var result = await _mediator.Send(new GetServiceTicketsQuery(filter));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load tickets.";
                 return View(new List<ServiceTicketDto>());
             }
 
-            var mechanicsResult = await _mechanicService.GetAvailableAsync();
+            var mechanicsResult = await _mediator.Send(new GetAvailableMechanicsQuery());
             ViewBag.Mechanics        = mechanicsResult.Success ? mechanicsResult.Data : new List<Application.DTOs.Mechanic.MechanicDto>();
             ViewBag.StatusFilter     = status;
             ViewBag.MechanicIdFilter = mechanicId;
@@ -60,16 +59,16 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Detail/{id}")]
         public async Task<IActionResult> Detail(int id)
         {
-            var ticketResult = await _ticketService.GetByIdAsync(id);
+            var ticketResult = await _mediator.Send(new GetServiceTicketByIdQuery(id));
             if (!ticketResult.Success)
             {
                 TempData["Error"] = ticketResult.Errors?.FirstOrDefault() ?? "Ticket not found.";
                 return RedirectToAction(nameof(Index));
             }
 
-            var mechanicsResult    = await _mechanicService.GetAvailableAsync();
-            var serviceTypesResult = await _serviceTypeService.GetActiveAsync();
-            var partsResult        = await _partService.GetAllAsync();
+            var mechanicsResult    = await _mediator.Send(new GetAvailableMechanicsQuery());
+            var serviceTypesResult = await _mediator.Send(new GetActiveServiceTypesQuery());
+            var partsResult        = await _mediator.Send(new GetPartsQuery());
 
             return View(new TicketDetailViewModel
             {
@@ -97,15 +96,8 @@ namespace BikeService.Web.Controllers.Admin
                 return View(vm);
             }
 
-            var dto = new ServiceTicketFormDto
-            {
-                BikeId                  = vm.BikeId,
-                MechanicId              = vm.MechanicId,
-                DiagnosisNotes          = vm.DiagnosisNotes,
-                EstimatedCompletionDate = vm.EstimatedCompletionDate,
-            };
-
-            var result = await _ticketService.CreateAsync(dto);
+            var result = await _mediator.Send(new CreateServiceTicketCommand(
+                vm.BikeId, vm.MechanicId, null, vm.DiagnosisNotes, vm.EstimatedCompletionDate));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to create ticket.";
@@ -121,7 +113,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, ServiceTicketStatus newStatus)
         {
-            var result = await _ticketService.UpdateStatusAsync(id, newStatus);
+            var result = await _mediator.Send(new UpdateServiceTicketStatusCommand(id, newStatus));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update status.";
             else
@@ -134,7 +126,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AssignMechanic(int id, int mechanicId)
         {
-            var result = await _ticketService.AssignMechanicAsync(id, mechanicId);
+            var result = await _mediator.Send(new AssignMechanicToTicketCommand(id, mechanicId));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to assign mechanic.";
             else
@@ -147,7 +139,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateDiagnosis(int id, string? diagnosisNotes, DateTime? estimatedCompletionDate)
         {
-            var result = await _ticketService.UpdateDiagnosisAsync(id, diagnosisNotes, estimatedCompletionDate);
+            var result = await _mediator.Send(new UpdateServiceTicketDiagnosisCommand(id, diagnosisNotes, estimatedCompletionDate));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to update diagnosis.";
             else
@@ -160,7 +152,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddItem(int ticketId, ServiceTicketItemFormDto dto)
         {
-            var result = await _ticketService.AddItemAsync(ticketId, dto);
+            var result = await _mediator.Send(new AddServiceTicketItemCommand(ticketId, dto.ServiceTypeId, dto.PartId, dto.Quantity, dto.UnitPrice));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to add item.";
             else
@@ -173,7 +165,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveItem(int itemId, int ticketId)
         {
-            var result = await _ticketService.RemoveItemAsync(itemId);
+            var result = await _mediator.Send(new RemoveServiceTicketItemCommand(itemId));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to remove item.";
             else
@@ -186,7 +178,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int id)
         {
-            var result = await _ticketService.CancelAsync(id);
+            var result = await _mediator.Send(new CancelServiceTicketCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to cancel ticket.";
             else
@@ -199,7 +191,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> GenerateInvoice(int id)
         {
-            var result = await _invoiceService.GenerateAsync(id);
+            var result = await _mediator.Send(new GenerateInvoiceCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to generate invoice.";
             else
@@ -210,8 +202,8 @@ namespace BikeService.Web.Controllers.Admin
 
         private async Task PopulateCreateDropdowns()
         {
-            var bikes     = await _bikeService.GetAllAsync();
-            var mechanics = await _mechanicService.GetAllAsync();
+            var bikes     = await _mediator.Send(new GetCustomerBikesQuery());
+            var mechanics = await _mediator.Send(new GetMechanicsQuery());
 
             ViewBag.Bikes = new SelectList(
                 (bikes.Data ?? []).Select(b => new

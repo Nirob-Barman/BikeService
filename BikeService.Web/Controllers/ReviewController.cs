@@ -1,6 +1,8 @@
-using BikeService.Application.DTOs.Review;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Reviews.Commands.CreateReview;
+using BikeService.Application.Features.Reviews.Queries.GetReviewByTicketId;
+using BikeService.Application.Features.ServiceTickets.Queries.GetServiceTicketById;
 using BikeService.Web.ViewModels.Review;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,20 +11,18 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Customer")]
     public class ReviewController : Controller
     {
-        private readonly IReviewService _reviewService;
-        private readonly IServiceTicketService _ticketService;
+        private readonly IMediator _mediator;
 
-        public ReviewController(IReviewService reviewService, IServiceTicketService ticketService)
+        public ReviewController(IMediator mediator)
         {
-            _reviewService = reviewService;
-            _ticketService = ticketService;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> Create(int ticketId)
         {
             // Check ticket exists and is delivered
-            var ticketResult = await _ticketService.GetByIdAsync(ticketId);
+            var ticketResult = await _mediator.Send(new GetServiceTicketByIdQuery(ticketId));
             if (!ticketResult.Success)
             {
                 TempData["Error"] = "Ticket not found.";
@@ -32,7 +32,7 @@ namespace BikeService.Web.Controllers
             var ticket = ticketResult.Data!;
 
             // Check no existing review
-            var existing = await _reviewService.GetByTicketIdAsync(ticketId);
+            var existing = await _mediator.Send(new GetReviewByTicketIdQuery(ticketId));
             if (existing.Success && existing.Data != null)
             {
                 TempData["Error"] = "You have already reviewed this service.";
@@ -53,12 +53,8 @@ namespace BikeService.Web.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            var result = await _reviewService.CreateAsync(new ReviewFormDto
-            {
-                ServiceTicketId = vm.ServiceTicketId,
-                Rating = vm.Rating,
-                Comment = vm.Comment
-            });
+            var result = await _mediator.Send(new CreateReviewCommand(
+                vm.ServiceTicketId, vm.Rating, vm.Comment));
 
             if (!result.Success)
             {

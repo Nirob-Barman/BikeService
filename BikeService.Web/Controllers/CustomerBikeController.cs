@@ -1,7 +1,12 @@
 using BikeService.Application.DTOs.CustomerBike;
+using BikeService.Application.Features.CustomerBikes.Commands.CreateCustomerBike;
+using BikeService.Application.Features.CustomerBikes.Commands.DeleteCustomerBike;
+using BikeService.Application.Features.CustomerBikes.Commands.UpdateCustomerBike;
+using BikeService.Application.Features.CustomerBikes.Queries.GetCustomerBikeById;
+using BikeService.Application.Features.CustomerBikes.Queries.GetMyBikes;
 using BikeService.Application.Interfaces.FileStorage;
-using BikeService.Application.Interfaces.Services;
 using BikeService.Web.ViewModels.CustomerBike;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,19 +15,19 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Customer")]
     public class CustomerBikeController : Controller
     {
-        private readonly ICustomerBikeService _bikeService;
+        private readonly IMediator _mediator;
         private readonly IFileStorage _fileStorage;
 
-        public CustomerBikeController(ICustomerBikeService bikeService, IFileStorage fileStorage)
+        public CustomerBikeController(IMediator mediator, IFileStorage fileStorage)
         {
-            _bikeService = bikeService;
+            _mediator = mediator;
             _fileStorage = fileStorage;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var result = await _bikeService.GetMyBikesAsync();
+            var result = await _mediator.Send(new GetMyBikesQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load bikes.";
@@ -52,7 +57,8 @@ namespace BikeService.Web.Controllers
                 ImageUrl = imageUrl
             };
 
-            var result = await _bikeService.CreateAsync(dto);
+            var result = await _mediator.Send(new CreateCustomerBikeCommand(
+                dto.Make, dto.Model, dto.Year, dto.RegistrationNo, dto.ImageUrl));
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, result.Errors?.FirstOrDefault() ?? "Failed to register bike.");
@@ -66,7 +72,7 @@ namespace BikeService.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _bikeService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetCustomerBikeByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = "Bike not found.";
@@ -110,7 +116,8 @@ namespace BikeService.Web.Controllers
                 ImageUrl = imageUrl
             };
 
-            var result = await _bikeService.UpdateAsync(id, dto);
+            var result = await _mediator.Send(new UpdateCustomerBikeCommand(
+                id, dto.Make, dto.Model, dto.Year, dto.RegistrationNo, dto.ImageUrl));
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, result.Errors?.FirstOrDefault() ?? "Failed to update bike.");
@@ -126,7 +133,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _bikeService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeleteCustomerBikeCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete bike.";
             else

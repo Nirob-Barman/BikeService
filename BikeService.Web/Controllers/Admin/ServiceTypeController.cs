@@ -1,7 +1,13 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.ServiceTypes.Commands.CreateServiceType;
+using BikeService.Application.Features.ServiceTypes.Commands.DeleteServiceType;
+using BikeService.Application.Features.ServiceTypes.Commands.ToggleServiceTypeActive;
+using BikeService.Application.Features.ServiceTypes.Commands.UpdateServiceType;
+using BikeService.Application.Features.ServiceTypes.Queries.GetServiceTypeById;
+using BikeService.Application.Features.ServiceTypes.Queries.GetServiceTypes;
 using BikeService.Domain.Constants;
 using BikeService.Web.ViewModels.Mappers;
 using BikeService.Web.ViewModels.ServiceType;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,17 +17,17 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class ServiceTypeController : Controller
     {
-        private readonly IServiceTypeService _serviceTypeService;
+        private readonly IMediator _mediator;
 
-        public ServiceTypeController(IServiceTypeService serviceTypeService)
+        public ServiceTypeController(IMediator mediator)
         {
-            _serviceTypeService = serviceTypeService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
         public async Task<IActionResult> Index()
         {
-            var result = await _serviceTypeService.GetAllAsync();
+            var result = await _mediator.Send(new GetServiceTypesQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load service types.";
@@ -39,7 +45,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _serviceTypeService.CreateAsync(ServiceTypeViewModelMapper.ToDto(vm));
+            var dto = ServiceTypeViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new CreateServiceTypeCommand(
+                dto.Name, dto.Description, dto.BasePrice, dto.EstimatedHours, dto.IsActive));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -57,7 +65,7 @@ namespace BikeService.Web.Controllers.Admin
         [HttpGet("Edit/{id}")]
         public async Task<IActionResult> Edit(int id)
         {
-            var result = await _serviceTypeService.GetByIdAsync(id);
+            var result = await _mediator.Send(new GetServiceTypeByIdQuery(id));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Service type not found.";
@@ -72,7 +80,9 @@ namespace BikeService.Web.Controllers.Admin
         {
             if (!ModelState.IsValid) return View(vm);
 
-            var result = await _serviceTypeService.UpdateAsync(id, ServiceTypeViewModelMapper.ToDto(vm));
+            var dto = ServiceTypeViewModelMapper.ToDto(vm);
+            var result = await _mediator.Send(new UpdateServiceTypeCommand(
+                id, dto.Name, dto.Description, dto.BasePrice, dto.EstimatedHours, dto.IsActive));
             if (!result.Success)
             {
                 if (result.FieldErrors != null)
@@ -91,7 +101,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Toggle(int id)
         {
-            var result = await _serviceTypeService.ToggleActiveAsync(id);
+            var result = await _mediator.Send(new ToggleServiceTypeActiveCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to toggle service type.";
             else
@@ -104,7 +114,7 @@ namespace BikeService.Web.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _serviceTypeService.DeleteAsync(id);
+            var result = await _mediator.Send(new DeleteServiceTypeCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to delete service type.";
             else

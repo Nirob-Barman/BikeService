@@ -1,7 +1,7 @@
 using BikeService.Application.DTOs.AuditLog;
-using BikeService.Application.Interfaces;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.AuditLogs.Queries.GetAuditLogs;
 using BikeService.Domain.Constants;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,11 +11,11 @@ namespace BikeService.Web.Controllers.Admin
     [Route("Admin/[controller]")]
     public class AuditLogController : Controller
     {
-        private readonly IAuditLogService _auditLogService;
+        private readonly IMediator _mediator;
 
-        public AuditLogController(IAuditLogService auditLogService)
+        public AuditLogController(IMediator mediator)
         {
-            _auditLogService = auditLogService;
+            _mediator = mediator;
         }
 
         [HttpGet("")]
@@ -38,7 +38,7 @@ namespace BikeService.Web.Controllers.Admin
                 PageSize = 20
             };
 
-            var result = await _auditLogService.GetPagedAsync(filter);
+            var result = await _mediator.Send(new GetAuditLogsQuery(filter));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load audit logs.";

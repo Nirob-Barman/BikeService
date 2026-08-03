@@ -1,5 +1,9 @@
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Payments.Commands.HandlePaymentCancel;
+using BikeService.Application.Features.Payments.Commands.HandlePaymentSuccess;
+using BikeService.Application.Features.Payments.Commands.InitiatePayment;
+using BikeService.Application.Features.Payments.Queries.GetCheckoutInfo;
 using BikeService.Web.ViewModels.Payment;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,17 +12,17 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Customer")]
     public class PaymentController : Controller
     {
-        private readonly IPaymentService _paymentService;
+        private readonly IMediator _mediator;
 
-        public PaymentController(IPaymentService paymentService)
+        public PaymentController(IMediator mediator)
         {
-            _paymentService = paymentService;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> Checkout(int invoiceId, string? promoCode)
         {
-            var result = await _paymentService.GetCheckoutInfoAsync(invoiceId, promoCode);
+            var result = await _mediator.Send(new GetCheckoutInfoQuery(invoiceId, promoCode));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Unable to load checkout.";
@@ -40,12 +44,12 @@ namespace BikeService.Web.Controllers
             if (!ModelState.IsValid)
             {
                 // Reload checkout info
-                var reload = await _paymentService.GetCheckoutInfoAsync(vm.Info.InvoiceId, vm.PromoCode);
+                var reload = await _mediator.Send(new GetCheckoutInfoQuery(vm.Info.InvoiceId, vm.PromoCode));
                 if (reload.Success) vm.Info = reload.Data!;
                 return View("Checkout", vm);
             }
 
-            var result = await _paymentService.InitiateAsync(vm.Info.InvoiceId, vm.GatewayId, vm.PromoCode);
+            var result = await _mediator.Send(new InitiatePaymentCommand(vm.Info.InvoiceId, vm.GatewayId, vm.PromoCode));
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Payment initiation failed.";
@@ -62,7 +66,7 @@ namespace BikeService.Web.Controllers
             var callbackParams = Request.Query
                 .ToDictionary(kv => kv.Key, kv => kv.Value.ToString());
 
-            var result = await _paymentService.HandleSuccessAsync(txId, callbackParams);
+            var result = await _mediator.Send(new HandlePaymentSuccessCommand(txId, callbackParams));
             ViewBag.Success = result.Success;
             ViewBag.Message = result.Success
                 ? (result.Message ?? "Payment successful!")
@@ -80,7 +84,7 @@ namespace BikeService.Web.Controllers
             callbackParams["txId"] = txId.ToString();
             callbackParams["gateway"] = gateway;
 
-            var result = await _paymentService.HandleSuccessAsync(txId, callbackParams);
+            var result = await _mediator.Send(new HandlePaymentSuccessCommand(txId, callbackParams));
             ViewBag.Success = result.Success;
             ViewBag.Message = result.Success
                 ? (result.Message ?? "Payment successful!")
@@ -93,7 +97,7 @@ namespace BikeService.Web.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Cancel(int txId)
         {
-            await _paymentService.HandleCancelAsync(txId);
+            await _mediator.Send(new HandlePaymentCancelCommand(txId));
             return View();
         }
     }

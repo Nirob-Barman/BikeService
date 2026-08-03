@@ -1,6 +1,10 @@
 using BikeService.Application.DTOs.Appointment;
-using BikeService.Application.Interfaces.Services;
+using BikeService.Application.Features.Appointments.Commands.CancelAppointment;
+using BikeService.Application.Features.Appointments.Commands.CreateAppointment;
+using BikeService.Application.Features.Appointments.Queries.GetMyAppointments;
+using BikeService.Application.Features.CustomerBikes.Queries.GetMyBikes;
 using BikeService.Web.ViewModels.Appointment;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,19 +13,17 @@ namespace BikeService.Web.Controllers
     [Authorize(Roles = "Customer")]
     public class AppointmentController : Controller
     {
-        private readonly IAppointmentService _appointmentService;
-        private readonly ICustomerBikeService _bikeService;
+        private readonly IMediator _mediator;
 
-        public AppointmentController(IAppointmentService appointmentService, ICustomerBikeService bikeService)
+        public AppointmentController(IMediator mediator)
         {
-            _appointmentService = appointmentService;
-            _bikeService = bikeService;
+            _mediator = mediator;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var result = await _appointmentService.GetMyAppointmentsAsync();
+            var result = await _mediator.Send(new GetMyAppointmentsQuery());
             if (!result.Success)
             {
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to load appointments.";
@@ -33,7 +35,7 @@ namespace BikeService.Web.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var bikesResult = await _bikeService.GetMyBikesAsync();
+            var bikesResult = await _mediator.Send(new GetMyBikesQuery());
             var bikes = bikesResult.Data ?? new();
 
             if (!bikes.Any())
@@ -51,19 +53,12 @@ namespace BikeService.Web.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var bikesResult = await _bikeService.GetMyBikesAsync();
+                var bikesResult = await _mediator.Send(new GetMyBikesQuery());
                 vm.Bikes = bikesResult.Data ?? new();
                 return View(vm);
             }
 
-            var dto = new AppointmentFormDto
-            {
-                BikeId = vm.BikeId,
-                AppointmentDate = vm.AppointmentDate,
-                Notes = vm.Notes
-            };
-
-            var result = await _appointmentService.CreateAsync(dto);
+            var result = await _mediator.Send(new CreateAppointmentCommand(vm.BikeId, vm.AppointmentDate, vm.Notes));
             if (!result.Success)
             {
                 foreach (var err in result.Errors ?? new())
@@ -73,7 +68,7 @@ namespace BikeService.Web.Controllers
                     foreach (var fe in result.FieldErrors)
                         ModelState.AddModelError(fe.Key, fe.Value);
 
-                var bikesResult = await _bikeService.GetMyBikesAsync();
+                var bikesResult = await _mediator.Send(new GetMyBikesQuery());
                 vm.Bikes = bikesResult.Data ?? new();
                 return View(vm);
             }
@@ -86,7 +81,7 @@ namespace BikeService.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Cancel(int id)
         {
-            var result = await _appointmentService.CancelAsync(id);
+            var result = await _mediator.Send(new CancelAppointmentCommand(id));
             if (!result.Success)
                 TempData["Error"] = result.Errors?.FirstOrDefault() ?? "Failed to cancel appointment.";
             else

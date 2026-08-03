@@ -1,7 +1,16 @@
+using BikeService.Application.Features.Account.Commands.ChangePassword;
+using BikeService.Application.Features.Account.Commands.ForgotPassword;
+using BikeService.Application.Features.Account.Commands.LoginUser;
+using BikeService.Application.Features.Account.Commands.LogoutUser;
+using BikeService.Application.Features.Account.Commands.RegisterUser;
+using BikeService.Application.Features.Account.Commands.ResetPassword;
+using BikeService.Application.Features.Account.Commands.UpdateProfile;
+using BikeService.Application.Features.Account.Commands.UploadProfilePhoto;
+using BikeService.Application.Features.Account.Queries.GetProfile;
 using BikeService.Application.Interfaces;
-using BikeService.Application.Interfaces.Services;
 using BikeService.Web.ViewModels.Account;
 using BikeService.Web.ViewModels.Mappers;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +18,12 @@ namespace BikeService.Web.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly IUserService _userService;
+    private readonly IMediator _mediator;
     private readonly IUserContextService _userContextService;
 
-    public AccountController(IUserService userService, IUserContextService userContextService)
+    public AccountController(IMediator mediator, IUserContextService userContextService)
     {
-        _userService = userService;
+        _mediator = mediator;
         _userContextService = userContextService;
     }
 
@@ -39,7 +48,8 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _userService.LoginAsync(AccountMapper.ToDto(model));
+        var dto = AccountMapper.ToDto(model);
+        var result = await _mediator.Send(new LoginUserCommand(dto.Email, dto.Password, dto.RememberMe));
 
         if (!result.Success)
         {
@@ -59,7 +69,7 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await _userService.LogoutAsync();
+        await _mediator.Send(new LogoutUserCommand());
         return RedirectToAction("Index", "Home");
     }
 
@@ -75,7 +85,8 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var result = await _userService.RegisterAsync(AccountMapper.ToDto(model));
+        var dto = AccountMapper.ToDto(model);
+        var result = await _mediator.Send(new RegisterUserCommand(dto.FirstName, dto.LastName, dto.Email, dto.Password, dto.Address));
 
         if (!result.Success)
         {
@@ -97,7 +108,7 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> Profile()
     {
-        var result = await _userService.GetProfileAsync();
+        var result = await _mediator.Send(new GetProfileQuery());
         if (!result.Success)
             return RedirectToAction(nameof(Login));
 
@@ -116,12 +127,13 @@ public class AccountController : Controller
         if (vm.Photo != null && vm.Photo.Length > 0)
         {
             await using var stream = vm.Photo.OpenReadStream();
-            var photoResult = await _userService.UploadProfilePhotoAsync(stream, vm.Photo.FileName);
+            var photoResult = await _mediator.Send(new UploadProfilePhotoCommand(stream, vm.Photo.FileName));
             if (!photoResult.Success)
                 TempData["Error"] = photoResult.Errors?.FirstOrDefault() ?? "Photo upload failed.";
         }
 
-        var result = await _userService.UpdateProfileAsync(AccountMapper.ToDto(vm));
+        var dto = AccountMapper.ToDto(vm);
+        var result = await _mediator.Send(new UpdateProfileCommand(dto.FirstName, dto.LastName, dto.Address));
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Errors?.FirstOrDefault() ?? "Update failed.");
@@ -146,7 +158,8 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(vm);
 
-        var result = await _userService.ChangePasswordAsync(AccountMapper.ToDto(vm));
+        var dto = AccountMapper.ToDto(vm);
+        var result = await _mediator.Send(new ChangePasswordCommand(dto.CurrentPassword, dto.NewPassword));
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Errors?.FirstOrDefault() ?? "Password change failed.");
@@ -169,7 +182,8 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(vm);
 
-        await _userService.ForgotPasswordAsync(AccountMapper.ToDto(vm), _userContextService.GetBaseUrl());
+        var dto = AccountMapper.ToDto(vm);
+        await _mediator.Send(new ForgotPasswordCommand(dto.Email, _userContextService.GetBaseUrl()));
         return RedirectToAction(nameof(ForgotPasswordConfirmation));
     }
 
@@ -194,7 +208,8 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(vm);
 
-        var result = await _userService.ResetPasswordAsync(AccountMapper.ToDto(vm));
+        var dto = AccountMapper.ToDto(vm);
+        var result = await _mediator.Send(new ResetPasswordCommand(dto.Email, dto.Token, dto.NewPassword));
         if (!result.Success)
         {
             ModelState.AddModelError(string.Empty, result.Errors?.FirstOrDefault() ?? "Password reset failed.");
